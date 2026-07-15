@@ -11,36 +11,63 @@ use Illuminate\Support\Facades\DB;
 
 class VoterController extends Controller
 {
+    public function getAvailableSessions(Request $request): JsonResponse
+    {
+        $voter = $request->user();
+
+        $sessions = VotingSession::where('status', 'ACTIVE')
+            ->with('category')
+            ->get()
+            ->filter(function ($session) use ($voter) {
+                // Periksa batasan kelas jika ada
+                if ($session->allowed_classes) {
+                    if (empty($voter->class) || !in_array($voter->class, $session->allowed_classes)) {
+                        return false;
+                    }
+                }
+                // Periksa apakah sudah memilih
+                return !$voter->hasVotedIn($session->id);
+            })
+            ->values();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $sessions,
+        ]);
+    }
+
     public function verifyRoomCode(Request $request): JsonResponse
     {
         $request->validate([
             'room_code' => 'required|string',
+            'session_id' => 'required|exists:voting_sessions,id',
         ]);
 
         $voter = $request->user();
 
-        $session = VotingSession::where('room_code', $request->room_code)
+        $session = VotingSession::where('id', $request->session_id)
+            ->where('room_code', $request->room_code)
             ->where('status', 'ACTIVE')
             ->first();
 
         if (!$session) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kode ruangan tidak valid atau sesi belum aktif',
+                'message' => 'Kode ruangan salah atau bilik suara belum diaktifkan!',
             ], 404);
         }
 
-        if ($session->allowed_classes && $voter->class && !in_array($voter->class, $session->allowed_classes)) {
+        if ($session->allowed_classes && (!$voter->class || !in_array($voter->class, $session->allowed_classes))) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kelas kamu tidak termasuk dalam sesi pemilihan ini',
+                'message' => 'Kelas kamu tidak terdaftar untuk mengikuti sesi pemilihan ini.',
             ], 403);
         }
 
         if ($voter->hasVotedIn($session->id)) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kamu sudah memberikan suara pada sesi ini',
+                'message' => 'Kamu sudah memberikan suara pada sesi pemilihan ini.',
             ], 409);
         }
 
@@ -70,14 +97,14 @@ class VoterController extends Controller
         if (!$session || $session->status !== 'ACTIVE') {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Sesi pemilihan tidak aktif',
+                'message' => 'Sesi pemilihan tidak aktif.',
             ], 422);
         }
 
         if ($voter->hasVotedIn($sessionId)) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kamu sudah memberikan suara pada sesi ini',
+                'message' => 'Kamu sudah memberikan suara pada sesi ini.',
             ], 409);
         }
 
@@ -90,20 +117,55 @@ class VoterController extends Controller
 
                 $candidate->increment('votes_count');
 
+                // Simpan pilihan voter (candidate_id) untuk riwayat pribadinya
                 $voter->histories()->create([
                     'voting_session_id' => $sessionId,
+                    'candidate_id'      => $validated['candidate_id'],
                 ]);
             });
         } catch (\Illuminate\Database\QueryException $e) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Kamu sudah memberikan suara pada sesi ini',
+                'message' => 'Gagal merekam pilihan. Silahkan coba lagi.',
             ], 409);
         }
 
         return response()->json([
             'status'  => 'success',
-            'message' => 'Suara berhasil direkam. Terima kasih!',
+            'message' => 'Suara kamu berhasil direkam. Terima kasih atas partisipasinya!',
+        ]);
+    }
+
+    public function getResults(Request $request): JsonResponse
+    {
+        // Ambil sesi ARCHIVED yang dipublikasikan hasilnya
+        $sessions = VotingSession::where('status', 'ARCHIVED')
+            ->where('results_published', true)
+            ->with(['category', 'candidates' => function ($q) {
+                $q->orderBy('candidate_number');
+            }])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $sessions,
+        ]);
+    }
+
+    public function getHistory(Request $request): JsonResponse
+    {
+        $voter = $request->user();
+
+        // Ambil riwayat pemilih
+        $history = $voter->histories()
+            ->with(['votingSession.category', 'candidate'])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $history,
         ]);
     }
 }

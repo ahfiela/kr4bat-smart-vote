@@ -12,17 +12,25 @@ class VotingSession extends Model
     public const STATUS_ARCHIVED = 'ARCHIVED';
 
     protected $fillable = [
+        'category_id',
         'name',
         'year',
         'room_code',
         'status',
         'allowed_classes',
+        'results_published',
     ];
 
     protected $casts = [
-        'allowed_classes' => 'array',
-        'year'            => 'integer',
+        'allowed_classes'   => 'array',
+        'year'              => 'integer',
+        'results_published' => 'boolean',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
 
     public function candidates(): HasMany
     {

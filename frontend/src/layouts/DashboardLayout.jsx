@@ -37,8 +37,8 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans relative overflow-x-hidden selection:bg-blue-600/30 selection:text-blue-200">
-      <div className="absolute inset-0 pointer-events-none grid grid-cols-32 grid-rows-14 gap-[2px] p-2 opacity-70 z-0">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e3a8a]/80 to-[#0f172a] text-slate-100 font-sans relative overflow-x-hidden selection:bg-blue-600/30 selection:text-blue-200">
+      <div className="absolute inset-0 pointer-events-none grid grid-cols-32 grid-rows-14 gap-[2px] p-2 opacity-35 z-0">
         {tiles.map((tile) => (
           <div
             key={tile.id}
@@ -49,7 +49,7 @@ export default function DashboardLayout() {
       </div>
 
       <div className="relative z-10 flex min-h-screen">
-        <aside className="w-72 bg-slate-900/60 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between p-6 shrink-0">
+        <aside className="w-72 bg-[#1e293b]/60 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between p-6 shrink-0">
           <div>
             <div className="flex items-center space-x-3 mb-10">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold tracking-wider shadow-lg shadow-blue-500/20">
@@ -66,6 +66,10 @@ export default function DashboardLayout() {
                 <ion-icon name="time" className="text-lg"></ion-icon>
                 <span>Sesi Pemilihan</span>
               </Link>
+              <Link to="/admin/categories" className={getMenuClass('/admin/categories')}>
+                <ion-icon name="list" className="text-lg"></ion-icon>
+                <span>Kategori Pemilu</span>
+              </Link>
               <Link to="/admin/candidates" className={getMenuClass('/admin/candidates')}>
                 <ion-icon name="people" className="text-lg"></ion-icon>
                 <span>Data Kandidat</span>
@@ -73,6 +77,10 @@ export default function DashboardLayout() {
               <Link to="/admin/voters" className={getMenuClass('/admin/voters')}>
                 <ion-icon name="id-card" className="text-lg"></ion-icon>
                 <span>Daftar Pemilih</span>
+              </Link>
+              <Link to="/admin/settings" className={getMenuClass('/admin/settings')}>
+                <ion-icon name="settings" className="text-lg"></ion-icon>
+                <span>Pengaturan Admin</span>
               </Link>
             </nav>
           </div>

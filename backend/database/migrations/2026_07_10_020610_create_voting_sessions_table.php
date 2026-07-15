@@ -10,11 +10,13 @@ return new class extends Migration
     {
         Schema::create('voting_sessions', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('category_id')->nullable()->constrained('categories')->onDelete('cascade');
             $table->string('name');
             $table->year('year');
             $table->string('room_code')->unique();
             $table->enum('status', ['DRAFT', 'ACTIVE', 'ARCHIVED'])->default('DRAFT');
             $table->json('allowed_classes')->nullable();
+            $table->boolean('results_published')->default(false);
             $table->timestamps();
         });
     }

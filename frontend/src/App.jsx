@@ -8,12 +8,10 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardSession from './pages/admin/DashboardSession';
 import DashboardVoter from './pages/voter/DashboardVoter';
 
-const DashboardCandidate = () => (
-  <div className="text-slate-400">Halaman Management Data Kandidat (Coming Soon)</div>
-);
-const DashboardVoterList = () => (
-  <div className="text-slate-400">Halaman Management Daftar Pemilih (Coming Soon)</div>
-);
+import DashboardCategory from './pages/admin/DashboardCategory';
+import DashboardCandidates from './pages/admin/DashboardCandidates';
+import DashboardVoters from './pages/admin/DashboardVoters';
+import DashboardSettingsAdmin from './pages/admin/DashboardSettingsAdmin';
 
 export default function App() {
   return (
@@ -32,8 +30,10 @@ export default function App() {
           >
             <Route index element={<Navigate to="/admin/sessions" replace />} />
             <Route path="sessions" element={<DashboardSession />} />
-            <Route path="candidates" element={<DashboardCandidate />} />
-            <Route path="voters" element={<DashboardVoterList />} />
+            <Route path="categories" element={<DashboardCategory />} />
+            <Route path="candidates" element={<DashboardCandidates />} />
+            <Route path="voters" element={<DashboardVoters />} />
+            <Route path="settings" element={<DashboardSettingsAdmin />} />
           </Route>
 
           <Route
