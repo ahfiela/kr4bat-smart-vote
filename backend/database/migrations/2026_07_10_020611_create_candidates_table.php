@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('photo_path')->nullable();
             $table->text('vision');
             $table->text('mission');
+            $table->text('experience')->nullable();
             $table->unsignedInteger('votes_count')->default(0);
             $table->timestamps();
         });

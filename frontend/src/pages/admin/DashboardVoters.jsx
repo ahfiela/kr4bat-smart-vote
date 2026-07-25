@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
+import PasswordInput from '../../components/PasswordInput';
 
 export default function DashboardVoters() {
   const [voters, setVoters] = useState([]);
@@ -168,7 +169,6 @@ export default function DashboardVoters() {
       if (res.data.status === 'success') {
         setSuccessMessage(res.data.message);
         setImportFile(null);
-        // Reset file input
         const fileInput = document.getElementById('csv-upload');
         if (fileInput) fileInput.value = '';
         fetchVoters();
@@ -197,14 +197,82 @@ export default function DashboardVoters() {
     document.body.removeChild(link);
   };
 
-  return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex justify-between items-center border-b border-white/5 pb-4">
+  // Helper render kolom kedua kondisional berdasarkan peran
+  const renderConditionalSecondColumn = () => {
+    if (role === 'SISWA') {
+      return (
         <div>
-          <h1 className="text-2xl font-black bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">
+          <label className="block text-xs font-bold text-slate-400 mb-1.5">Pilihan Kelas</label>
+          {classes.length > 0 ? (
+            <select
+              value={voterClass}
+              onChange={(e) => setVoterClass(e.target.value)}
+              className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Pilih Kelas</option>
+              {classes.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={voterClass}
+              onChange={(e) => setVoterClass(e.target.value)}
+              placeholder="Misal: 10 PPLG 1"
+              className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            />
+          )}
+        </div>
+      );
+    }
+
+    if (role === 'GURU_STAF') {
+      return (
+        <div>
+          <label className="block text-xs font-bold text-slate-400 mb-1.5">Posisi / Jabatan</label>
+          <select
+            value={voterClass}
+            onChange={(e) => setVoterClass(e.target.value)}
+            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+          >
+            <option value="">Pilih Posisi/Jabatan</option>
+            <option value="Guru">Guru</option>
+            <option value="Tata Usaha">Tata Usaha</option>
+            <option value="Kepala Sekolah">Kepala Sekolah</option>
+          </select>
+        </div>
+      );
+    }
+
+    if (role === 'MITRA') {
+      return (
+        <div>
+          <label className="block text-xs font-bold text-slate-400 mb-1.5">Bidang Operasional</label>
+          <select
+            value={voterClass}
+            onChange={(e) => setVoterClass(e.target.value)}
+            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+          >
+            <option value="">Pilih Bidang Operasional</option>
+            <option value="Kebersihan">Kebersihan</option>
+            <option value="Keamanan">Keamanan</option>
+          </select>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <div className="space-y-8 animate-fade-in text-slate-800">
+      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             Daftar Pemilih Terdaftar
           </h1>
-          <p className="text-xs text-slate-400">Atur database pemilih (NISN/NIP) yang berhak memberikan suara</p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Atur database pemilih (NISN/NIP) yang berhak memberikan suara</p>
         </div>
       </div>
 
@@ -212,82 +280,75 @@ export default function DashboardVoters() {
         {/* Kolom Kiri: Form Add/Edit & Import CSV */}
         <div className="space-y-8">
           {/* Form CRUD */}
-          <div className="bg-[#1e293b]/40 backdrop-blur-md border border-white/5 rounded-2xl p-6">
-            <h3 className="text-lg font-bold text-slate-200 mb-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
+            <h3 className="text-base font-extrabold text-slate-900 mb-4">
               {editingId ? 'Edit Pemilih' : 'Tambah Pemilih Manual'}
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1.5">NISN / NIP / ID Pengguna</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">NISN / NIP / ID Pengguna</label>
                 <input
                   type="text"
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="2223101"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1.5">Nama Lengkap</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama Lengkap</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Mamat Rudiyanto"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1.5">Peran</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Peran Utama</label>
                   <select
                     value={role}
-                    onChange={(e) => setRole(e.target.value)}
-                    className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none"
+                    onChange={(e) => {
+                      setRole(e.target.value);
+                      setVoterClass(''); // reset pilihan kolom kedua saat peran berubah
+                    }}
+                    className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
                   >
-                    <option value="SISWA">SISWA</option>
-                    <option value="GURU_STAF">GURU/STAF</option>
-                    <option value="MITRA">MITRA</option>
+                    <option value="SISWA">Siswa</option>
+                    <option value="GURU_STAF">Guru / Staf</option>
+                    <option value="MITRA">Mitra</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-400 mb-1.5">Kelas</label>
-                  <input
-                    type="text"
-                    value={voterClass}
-                    onChange={(e) => setVoterClass(e.target.value)}
-                    placeholder="10 PPLG 1"
-                    className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
+                {renderConditionalSecondColumn()}
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-400 mb-1.5">
-                  Password {editingId ? <span className="text-slate-500">(Isi jika diganti)</span> : <span className="text-slate-500">(Bawaan = ID Pengguna)</span>}
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Password {editingId ? <span className="text-slate-400">(Isi jika diganti)</span> : <span className="text-slate-400">(Bawaan = ID Pengguna)</span>}
                 </label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Min. 6 Karakter"
-                  className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="rounded-xl px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               {errorMessage && (
-                <div className="text-xs text-red-400 font-semibold bg-red-500/10 border border-red-500/15 p-2.5 rounded-lg">
+                <div className="text-xs text-red-600 font-semibold bg-red-50 border border-red-100 p-2.5 rounded-xl">
                   ⚠️ {errorMessage}
                 </div>
               )}
               {successMessage && (
-                <div className="text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/15 p-2.5 rounded-lg">
+                <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
                   ✓ {successMessage}
                 </div>
               )}
@@ -296,7 +357,7 @@ export default function DashboardVoters() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 rounded-xl py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white transition-all cursor-pointer"
+                  className="flex-1 rounded-xl py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer shadow-xs"
                 >
                   {isLoading ? 'Menyimpan...' : editingId ? 'Simpan' : 'Tambah Pemilih'}
                 </button>
@@ -308,7 +369,7 @@ export default function DashboardVoters() {
                       resetForm();
                       resetMessages();
                     }}
-                    className="rounded-xl px-4 py-2.5 text-sm font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all cursor-pointer"
+                    className="rounded-xl px-4 py-2.5 text-sm font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
                   >
                     Batal
                   </button>
@@ -318,19 +379,19 @@ export default function DashboardVoters() {
           </div>
 
           {/* Import CSV */}
-          <div className="bg-[#1e293b]/40 backdrop-blur-md border border-white/5 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-slate-200">Import Massal Excel (CSV)</h3>
+              <h3 className="text-base font-extrabold text-slate-900">Import Massal Excel (CSV)</h3>
               <button
                 type="button"
                 onClick={downloadCSVTemplate}
-                className="text-[10px] font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1.5 rounded-lg border border-blue-500/10 transition-all cursor-pointer"
+                className="text-[10px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg border border-blue-100 transition-all cursor-pointer"
               >
                 Template CSV
               </button>
             </div>
 
-            <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+            <p className="text-[11px] text-slate-500 mb-4 leading-relaxed font-medium">
               Unggah file CSV dengan pemisah titik-koma (;) atau koma (,) yang berisi kolom: <b>identifier, name, role, class, password</b>. Kolom password opsional, jika kosong default disamakan dengan ID Pengguna.
             </p>
 
@@ -342,14 +403,14 @@ export default function DashboardVoters() {
                   required
                   accept=".csv,.txt"
                   onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                  className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600/10 file:text-blue-400 file:cursor-pointer hover:file:bg-blue-600/20"
+                  className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:cursor-pointer hover:file:bg-blue-100"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading || !importFile}
-                className="w-full rounded-xl py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 text-white transition-all cursor-pointer"
+                className="w-full rounded-xl py-2.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 text-white transition-all cursor-pointer"
               >
                 {isLoading ? 'Mengimpor...' : 'Mulai Import'}
               </button>
@@ -368,7 +429,7 @@ export default function DashboardVoters() {
                   placeholder="Cari nama atau NISN..."
                   value={search}
                   onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  className="w-full rounded-xl px-4 py-2 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                  className="w-full rounded-xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 shadow-xs"
                 />
               </div>
 
@@ -377,7 +438,7 @@ export default function DashboardVoters() {
                 <select
                   value={roleFilter}
                   onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-                  className="bg-slate-800 border border-white/10 rounded-xl text-xs text-slate-300 px-3 py-2 focus:outline-none"
+                  className="bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium px-3 py-2 focus:outline-none shadow-xs"
                 >
                   <option value="">Semua Peran</option>
                   <option value="SISWA">SISWA</option>
@@ -388,7 +449,7 @@ export default function DashboardVoters() {
                 <select
                   value={classFilter}
                   onChange={(e) => { setClassFilter(e.target.value); setPage(1); }}
-                  className="bg-slate-800 border border-white/10 rounded-xl text-xs text-slate-300 px-3 py-2 focus:outline-none max-w-44"
+                  className="bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium px-3 py-2 focus:outline-none max-w-44 shadow-xs"
                 >
                   <option value="">Semua Kelas</option>
                   {classes.map((cls) => (
@@ -398,11 +459,11 @@ export default function DashboardVoters() {
               </div>
             </div>
 
-            <div className="bg-[#1e293b]/20 border border-white/5 rounded-2xl overflow-hidden backdrop-blur-sm">
+            <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-white/5 bg-white/[0.02] text-xs font-bold text-slate-400">
+                    <tr className="border-b border-slate-200 bg-slate-50 text-xs font-bold text-slate-600">
                       <th className="px-5 py-4">ID Pengguna</th>
                       <th className="px-5 py-4">Nama Lengkap</th>
                       <th className="px-5 py-4">Peran</th>
@@ -410,42 +471,42 @@ export default function DashboardVoters() {
                       <th className="px-5 py-4 text-center">Aksi</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-sm text-slate-300">
+                  <tbody className="divide-y divide-slate-100 text-sm text-slate-800">
                     {isFetchingVoters ? (
                       <tr>
-                        <td colSpan="5" className="px-5 py-8 text-center text-slate-500">Memuat data pemilih...</td>
+                        <td colSpan="5" className="px-5 py-8 text-center text-slate-400">Memuat data pemilih...</td>
                       </tr>
                     ) : voters.length === 0 ? (
                       <tr>
-                        <td colSpan="5" className="px-5 py-8 text-center text-slate-500">Pemilih tidak ditemukan.</td>
+                        <td colSpan="5" className="px-5 py-8 text-center text-slate-400">Pemilih tidak ditemukan.</td>
                       </tr>
                     ) : (
                       voters.map((v) => (
-                        <tr key={v.id} className="hover:bg-white/[0.01] transition-all">
-                          <td className="px-5 py-3.5 font-mono font-bold text-slate-400">{v.identifier}</td>
-                          <td className="px-5 py-3.5 font-semibold text-slate-200">{v.name}</td>
+                        <tr key={v.id} className="hover:bg-slate-50/80 transition-all">
+                          <td className="px-5 py-3.5 font-mono font-bold text-slate-600">{v.identifier}</td>
+                          <td className="px-5 py-3.5 font-bold text-slate-900">{v.name}</td>
                           <td className="px-5 py-3.5">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                              v.role === 'SISWA' ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 
-                              v.role === 'GURU_STAF' ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' : 
-                              'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                              v.role === 'SISWA' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
+                              v.role === 'GURU_STAF' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
+                              'bg-amber-50 text-amber-700 border-amber-200'
                             }`}>
                               {v.role}
                             </span>
                           </td>
-                          <td className="px-5 py-3.5 text-slate-400">{v.class || '—'}</td>
+                          <td className="px-5 py-3.5 text-slate-500 font-medium">{v.class || '—'}</td>
                           <td className="px-5 py-3.5 text-center">
                             <div className="flex gap-2 justify-center">
                               <button
                                 onClick={() => handleEditInit(v)}
-                                className="p-1.5 rounded-lg bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-600/10 transition-all text-xs cursor-pointer"
+                                className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 transition-all text-xs cursor-pointer"
                                 title="Edit Pemilih"
                               >
                                 <ion-icon name="create-outline"></ion-icon>
                               </button>
                               <button
                                 onClick={() => handleDelete(v.id)}
-                                className="p-1.5 rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-400 border border-red-600/10 transition-all text-xs cursor-pointer"
+                                className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition-all text-xs cursor-pointer"
                                 title="Hapus Pemilih"
                               >
                                 <ion-icon name="trash-outline"></ion-icon>
@@ -464,24 +525,24 @@ export default function DashboardVoters() {
           {/* Pagination */}
           {!isFetchingVoters && lastPage > 1 && (
             <div className="flex justify-between items-center mt-4">
-              <span className="text-xs text-slate-500">
-                Total: <span className="font-bold text-slate-400">{totalVoters}</span> pemilih
+              <span className="text-xs text-slate-500 font-medium">
+                Total: <span className="font-extrabold text-slate-800">{totalVoters}</span> pemilih
               </span>
               <div className="flex gap-2">
                 <button
                   disabled={page <= 1}
                   onClick={() => setPage(page - 1)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 cursor-pointer"
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 cursor-pointer shadow-xs"
                 >
                   Sebelumnya
                 </button>
-                <span className="text-xs text-slate-400 flex items-center px-1 font-bold">
+                <span className="text-xs text-slate-600 flex items-center px-2 font-bold">
                   Halaman {page} dari {lastPage}
                 </span>
                 <button
                   disabled={page >= lastPage}
                   onClick={() => setPage(page + 1)}
-                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 cursor-pointer"
+                  className="rounded-lg px-3 py-1.5 text-xs font-bold bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 cursor-pointer shadow-xs"
                 >
                   Selanjutnya
                 </button>

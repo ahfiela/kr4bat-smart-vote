@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import PasswordInput from '../components/PasswordInput'
 import logok4 from '../assets/logoK4.png'
 
 function LandingPage() {
@@ -137,13 +138,12 @@ function LandingPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-600 tracking-wide mb-1.5">KATA SANDI</label>
-                <input
-                  type="password"
+                <PasswordInput
                   required
                   placeholder="Masukkan kata sandi disini"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className={`w-full rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 border transition-all font-medium focus:outline-hidden ${
+                  className={`rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 border transition-all font-medium focus:outline-hidden ${
                     errorMessage
                       ? 'border-red-500 bg-red-50/30 focus:border-red-500'
                       : 'border-slate-200/80 bg-slate-50 focus:border-blue-500 focus:bg-white'

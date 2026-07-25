@@ -37,10 +37,13 @@ class AdminController extends Controller
     public function storeSession(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id'      => 'required|exists:categories,id',
+            'category_id'      => 'nullable|exists:categories,id',
             'name'             => 'required|string|max:150',
+            'description'      => 'nullable|string',
             'year'             => 'required|digits:4',
             'room_code'        => 'required|string|max:20|unique:voting_sessions,room_code',
+            'allowed_roles'    => 'nullable|array',
+            'allowed_roles.*'  => 'string|in:SISWA,GURU_STAF,MITRA',
             'allowed_classes'  => 'nullable|array',
             'allowed_classes.*' => 'string',
             'status'           => 'nullable|string|in:DRAFT,ACTIVE,ARCHIVED',
@@ -48,24 +51,16 @@ class AdminController extends Controller
 
         $status = $validated['status'] ?? 'DRAFT';
 
-        // Cegah bentrok kategori jika status DRAFT atau ACTIVE
-        if ($status === 'ACTIVE' || $status === 'DRAFT') {
-            $exists = VotingSession::where('category_id', $validated['category_id'])
-                ->whereIn('status', ['DRAFT', 'ACTIVE'])
-                ->exists();
-            if ($exists) {
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => 'Kategori ini sedang digunakan pada sesi aktif/draft lain. Selesaikan sesi tersebut terlebih dahulu!',
-                ], 422);
-            }
-        }
+        // Jika category_id tidak dikirim, gunakan kategori pertama atau buat default
+        $categoryId = $validated['category_id'] ?? Category::first()?->id;
 
         $session = VotingSession::create([
-            'category_id'     => $validated['category_id'],
+            'category_id'     => $categoryId,
             'name'            => $validated['name'],
+            'description'     => $validated['description'] ?? null,
             'year'            => $validated['year'],
             'room_code'       => $validated['room_code'],
+            'allowed_roles'   => $validated['allowed_roles'] ?? ['SISWA', 'GURU_STAF', 'MITRA'],
             'allowed_classes' => $validated['allowed_classes'] ?? null,
             'status'          => $status,
         ]);
@@ -73,7 +68,7 @@ class AdminController extends Controller
         return response()->json([
             'status'  => 'success',
             'message' => 'Sesi pemilihan berhasil dibuat',
-            'data'    => $session,
+            'data'    => $session->load(['category', 'candidates']),
         ], 201);
     }
 
@@ -171,11 +166,62 @@ class AdminController extends Controller
         ]);
     }
 
+    public function completeKloter(Request $request, VotingSession $session): JsonResponse
+    {
+        $validated = $request->validate([
+            'kloter' => 'required|string',
+        ]);
+
+        $kloter = $validated['kloter'];
+        $currentKloters = $session->completed_kloters ?? [];
+
+        if (!in_array($kloter, $currentKloters)) {
+            $currentKloters[] = $kloter;
+            $session->update(['completed_kloters' => $currentKloters]);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Kloter '{$kloter}' berhasil diselesaikan dan dikunci",
+            'data'    => $session,
+        ]);
+    }
+
+    public function addVoterToSession(Request $request, VotingSession $session): JsonResponse
+    {
+        $validated = $request->validate([
+            'identifier' => 'required|string',
+        ]);
+
+        $identifier = $validated['identifier'];
+        $currentVoters = $session->allowed_voters ?? [];
+
+        if (!in_array($identifier, $currentVoters)) {
+            $currentVoters[] = $identifier;
+            $session->update(['allowed_voters' => $currentVoters]);
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Pemilih {$identifier} berhasil ditambahkan ke bilik secara manual",
+            'data'    => $session,
+        ]);
+    }
+
     // === Kategori (Categories) ===
 
     public function getCategories(): JsonResponse
     {
-        $categories = Category::latest()->get();
+        $categories = Category::oldest()->get();
+
+        if ($categories->isEmpty()) {
+            $defaults = ['Kelas', 'Guru', 'Staf', 'Mitra'];
+            foreach ($defaults as $def) {
+                Category::create(['name' => $def]);
+            }
+            $categories = Category::oldest()->get();
+        }
+
         return response()->json(['status' => 'success', 'data' => $categories]);
     }
 
@@ -218,18 +264,24 @@ class AdminController extends Controller
     public function storeCandidate(Request $request, VotingSession $session): JsonResponse
     {
         $validated = $request->validate([
-            'candidate_number' => 'required|string|max:20',
+            'candidate_number' => 'nullable|string|max:20',
             'name'             => 'required|string|max:150',
             'photo'            => 'nullable|image|max:2048', // maks 2MB
             'vision'           => 'required|string',
             'mission'          => 'required|string',
+            'experience'       => 'nullable|string',
         ]);
+
+        // Penomoran otomatis jika tidak diisi atau diset otomatis
+        $existingCount = $session->candidates()->count();
+        $candidateNumber = !empty($validated['candidate_number']) 
+            ? $validated['candidate_number'] 
+            : (string)($existingCount + 1);
 
         $photoPath = null;
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
             $filename = time() . '_' . $file->getClientOriginalName();
-            // Simpan langsung di public path agar mudah diakses
             $targetDir = public_path('uploads/candidates');
             if (!File::exists($targetDir)) {
                 File::makeDirectory($targetDir, 0755, true);
@@ -239,11 +291,12 @@ class AdminController extends Controller
         }
 
         $candidate = $session->candidates()->create([
-            'candidate_number' => $validated['candidate_number'],
+            'candidate_number' => $candidateNumber,
             'name'             => $validated['name'],
             'photo_path'       => $photoPath,
             'vision'           => $validated['vision'],
             'mission'          => $validated['mission'],
+            'experience'       => $validated['experience'] ?? null,
             'votes_count'      => 0,
         ]);
 
@@ -258,6 +311,7 @@ class AdminController extends Controller
             'photo'            => 'nullable|image|max:2048',
             'vision'           => 'required|string',
             'mission'          => 'required|string',
+            'experience'       => 'nullable|string',
         ]);
 
         $photoPath = $candidate->photo_path;

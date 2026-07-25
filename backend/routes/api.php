@@ -21,6 +21,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/sessions/{session}', [AdminController::class, 'destroySession']);
             Route::patch('/sessions/{session}/status', [AdminController::class, 'updateStatus']);
             Route::post('/sessions/{session}/publish', [AdminController::class, 'publishResults']);
+            Route::post('/sessions/{session}/kloter/complete', [AdminController::class, 'completeKloter']);
+            Route::post('/sessions/{session}/add-voter', [AdminController::class, 'addVoterToSession']);
 
             // Categories
             Route::get('/categories', [AdminController::class, 'getCategories']);

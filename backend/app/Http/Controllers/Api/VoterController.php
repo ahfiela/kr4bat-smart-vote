@@ -19,10 +19,19 @@ class VoterController extends Controller
             ->with('category')
             ->get()
             ->filter(function ($session) use ($voter) {
-                // Periksa batasan kelas jika ada
-                if ($session->allowed_classes) {
-                    if (empty($voter->class) || !in_array($voter->class, $session->allowed_classes)) {
+                // Jika voter ada di allowed_voters (pencarian manual level 2), beri akses
+                $isExplicitlyAllowed = !empty($session->allowed_voters) && in_array($voter->identifier, $session->allowed_voters);
+
+                if (!$isExplicitlyAllowed) {
+                    // Periksa batasan peran global (Level 1)
+                    if (!empty($session->allowed_roles) && !in_array($voter->role, $session->allowed_roles)) {
                         return false;
+                    }
+                    // Periksa batasan kelas jika ada
+                    if (!empty($session->allowed_classes)) {
+                        if (empty($voter->class) || !in_array($voter->class, $session->allowed_classes)) {
+                            return false;
+                        }
                     }
                 }
                 // Periksa apakah sudah memilih
@@ -57,11 +66,22 @@ class VoterController extends Controller
             ], 404);
         }
 
-        if ($session->allowed_classes && (!$voter->class || !in_array($voter->class, $session->allowed_classes))) {
-            return response()->json([
-                'status'  => 'error',
-                'message' => 'Kelas kamu tidak terdaftar untuk mengikuti sesi pemilihan ini.',
-            ], 403);
+        $isExplicitlyAllowed = !empty($session->allowed_voters) && in_array($voter->identifier, $session->allowed_voters);
+
+        if (!$isExplicitlyAllowed) {
+            if (!empty($session->allowed_roles) && !in_array($voter->role, $session->allowed_roles)) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Peran pengguna kamu tidak memiliki hak akses pada bilik ini.',
+                ], 403);
+            }
+
+            if (!empty($session->allowed_classes) && (empty($voter->class) || !in_array($voter->class, $session->allowed_classes))) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => 'Kelas/Kategori kamu tidak terdaftar untuk mengikuti sesi pemilihan ini.',
+                ], 403);
+            }
         }
 
         if ($voter->hasVotedIn($session->id)) {

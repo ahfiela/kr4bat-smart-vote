@@ -8,19 +8,18 @@ export default function DashboardLayout() {
   const { auth, logout } = useAuth();
   const adminName = auth?.name || 'Administrator';
 
-  const cols = 32;
+  // Tiles pattern for light theme background (matches Voter Portal style)
+  const cols = 28;
   const rows = 14;
   const totalTiles = cols * rows;
 
   const tiles = useMemo(() => {
     return Array.from({ length: totalTiles }).map((_, index) => {
       const c = index % cols;
-      const scanDelay = c * 0.12;
-      const glitchPattern = Math.random() * 1.8;
-      const isHole = Math.random() < 0.15;
-      return { id: index, delay: scanDelay + glitchPattern, isHole };
+      const scanDelay = (c % 10) * 0.2;
+      return { id: index, delay: scanDelay };
     });
-  }, [totalTiles, cols]);
+  }, [totalTiles]);
 
   const handleLogout = () => {
     logout();
@@ -29,97 +28,97 @@ export default function DashboardLayout() {
 
   const getMenuClass = (path) => {
     const isActive = location.pathname === path;
-    return `w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer ${
+    return `w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-xs md:text-sm font-bold transition-all duration-200 cursor-pointer ${
       isActive
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
-        : 'text-slate-400 hover:bg-white/5 hover:text-slate-200'
+        ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
     }`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#1e3a8a]/80 to-[#0f172a] text-slate-100 font-sans relative overflow-x-hidden selection:bg-blue-600/30 selection:text-blue-200">
-      <div className="absolute inset-0 pointer-events-none grid grid-cols-32 grid-rows-14 gap-[2px] p-2 opacity-35 z-0">
-        {tiles.map((tile) => (
-          <div
-            key={tile.id}
-            className={`scan-tile rounded-[3px] bg-white/[0.01] transition-all duration-700 ${tile.isHole ? 'opacity-0' : ''}`}
-            style={{ animationDelay: `${tile.delay}s` }}
-          />
-        ))}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
+      {/* Background Soft Tile Pattern */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 z-0">
+        <div className="grid grid-cols-12 md:grid-cols-28 gap-2.5 p-4 max-w-7xl mx-auto">
+          {tiles.map((tile) => (
+            <div
+              key={tile.id}
+              className="aspect-square bg-slate-200/50 rounded-lg animate-pulse"
+              style={{ animationDuration: '4s', animationDelay: `${tile.delay}s` }}
+            />
+          ))}
+        </div>
       </div>
 
       <div className="relative z-10 flex min-h-screen">
-        <aside className="w-72 bg-[#1e293b]/60 backdrop-blur-xl border-r border-white/5 flex flex-col justify-between p-6 shrink-0">
+        {/* Sidebar Panel - Light Theme Harmonized */}
+        <aside className="w-72 bg-white/80 backdrop-blur-md border-r border-slate-200/80 flex flex-col justify-between p-6 shrink-0 shadow-xs">
           <div>
-            <div className="flex items-center space-x-3 mb-10">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold tracking-wider shadow-lg shadow-blue-500/20">
+            <div className="flex items-center space-x-3 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black tracking-wider shadow-md">
                 V4
               </div>
               <div>
-                <h2 className="font-extrabold tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">VoteSmartK4</h2>
-                <p className="text-[10px] text-blue-400 font-bold tracking-widest uppercase">Admin Panel</p>
+                <h2 className="font-black tracking-tight text-slate-900 text-base">VoteSmartK4</h2>
+                <p className="text-[10px] text-blue-600 font-extrabold tracking-widest uppercase">Admin Panel</p>
               </div>
             </div>
 
-            <nav className="space-y-2">
+            <nav className="space-y-1.5">
               <Link to="/admin/sessions" className={getMenuClass('/admin/sessions')}>
-                <ion-icon name="time" className="text-lg"></ion-icon>
-                <span>Sesi Pemilihan</span>
+                <ion-icon name="time-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <span>Bilik Suara Aktif</span>
               </Link>
               <Link to="/admin/categories" className={getMenuClass('/admin/categories')}>
-                <ion-icon name="list" className="text-lg"></ion-icon>
-                <span>Kategori Pemilu</span>
+                <ion-icon name="list-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <span>Lis Hak Pilih & Kelas</span>
               </Link>
               <Link to="/admin/candidates" className={getMenuClass('/admin/candidates')}>
-                <ion-icon name="people" className="text-lg"></ion-icon>
+                <ion-icon name="people-outline" style={{ fontSize: '18px' }}></ion-icon>
                 <span>Data Kandidat</span>
               </Link>
               <Link to="/admin/voters" className={getMenuClass('/admin/voters')}>
-                <ion-icon name="id-card" className="text-lg"></ion-icon>
+                <ion-icon name="id-card-outline" style={{ fontSize: '18px' }}></ion-icon>
                 <span>Daftar Pemilih</span>
               </Link>
               <Link to="/admin/settings" className={getMenuClass('/admin/settings')}>
-                <ion-icon name="settings" className="text-lg"></ion-icon>
+                <ion-icon name="settings-outline" style={{ fontSize: '18px' }}></ion-icon>
                 <span>Pengaturan Admin</span>
               </Link>
             </nav>
           </div>
 
-          <div className="border-t border-white/5 pt-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center font-bold text-blue-400">
+          <div className="border-t border-slate-200/80 pt-4 space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-9 h-9 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center font-bold text-blue-600 text-xs">
                 {adminName.charAt(0).toUpperCase()}
               </div>
-              <div className="truncate">
-                <p className="text-sm font-bold text-slate-200 truncate">{adminName}</p>
-                <p className="text-xs text-emerald-400 flex items-center gap-1 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Online
+              <div className="truncate min-w-0">
+                <p className="text-xs font-bold text-slate-800 truncate">{adminName}</p>
+                <p className="text-[10px] text-emerald-600 flex items-center gap-1 font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Administrator
                 </p>
               </div>
             </div>
 
             <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 py-2.5 rounded-xl text-xs font-bold border border-red-500/10 transition-all duration-300 cursor-pointer"
+              className="w-full flex items-center justify-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-xl text-xs font-bold border border-red-100 transition-all duration-200 cursor-pointer"
             >
-              <ion-icon name="log-out"></ion-icon>
               <span>Keluar Sistem</span>
+              <span>🚪</span>
             </button>
           </div>
         </aside>
 
+        {/* Main Content Area */}
         <main className="flex-1 p-8 overflow-y-auto max-h-screen">
           <Outlet />
         </main>
       </div>
 
       <style>{`
-        @keyframes waveScanner {
-          0%, 100% { background-color: transparent; box-shadow: none; }
-          25% { background-color: rgba(235, 240, 248, 0.28); box-shadow: 0 0 10px rgba(235, 240, 248, 0.2); }
-          50%, 75% { background-color: rgba(255, 255, 255, 0.04); box-shadow: none; }
-        }
-        .scan-tile { animation: waveScanner 5s infinite ease-in-out; border: 1px solid rgba(255, 255, 255, 0.04); }
+        .font-sans { font-family: 'Inter', sans-serif !important; }
       `}</style>
     </div>
   );

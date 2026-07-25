@@ -14,6 +14,7 @@ class Candidate extends Model
         'photo_path',
         'vision',
         'mission',
+        'experience',
         'votes_count',
     ];
 

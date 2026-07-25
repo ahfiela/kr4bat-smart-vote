@@ -15,7 +15,11 @@ return new class extends Migration
             $table->year('year');
             $table->string('room_code')->unique();
             $table->enum('status', ['DRAFT', 'ACTIVE', 'ARCHIVED'])->default('DRAFT');
+            $table->text('description')->nullable();
+            $table->json('allowed_roles')->nullable();
             $table->json('allowed_classes')->nullable();
+            $table->json('completed_kloters')->nullable();
+            $table->json('allowed_voters')->nullable();
             $table->boolean('results_published')->default(false);
             $table->timestamps();
         });

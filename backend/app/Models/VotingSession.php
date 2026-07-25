@@ -14,15 +14,22 @@ class VotingSession extends Model
     protected $fillable = [
         'category_id',
         'name',
+        'description',
         'year',
         'room_code',
         'status',
+        'allowed_roles',
         'allowed_classes',
+        'completed_kloters',
+        'allowed_voters',
         'results_published',
     ];
 
     protected $casts = [
+        'allowed_roles'     => 'array',
         'allowed_classes'   => 'array',
+        'completed_kloters' => 'array',
+        'allowed_voters'    => 'array',
         'year'              => 'integer',
         'results_published' => 'boolean',
     ];
