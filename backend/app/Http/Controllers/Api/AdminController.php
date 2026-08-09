@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Candidate;
+use App\Models\SchoolClass;
 use App\Models\Voter;
 use App\Models\VotingSession;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +38,7 @@ class AdminController extends Controller
     public function storeSession(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category_id'      => 'nullable|exists:categories,id',
+            'category_id'      => 'required|exists:categories,id',
             'name'             => 'required|string|max:150',
             'description'      => 'nullable|string',
             'year'             => 'required|digits:4',
@@ -51,11 +52,8 @@ class AdminController extends Controller
 
         $status = $validated['status'] ?? 'DRAFT';
 
-        // Jika category_id tidak dikirim, gunakan kategori pertama atau buat default
-        $categoryId = $validated['category_id'] ?? Category::first()?->id;
-
         $session = VotingSession::create([
-            'category_id'     => $categoryId,
+            'category_id'     => $validated['category_id'],
             'name'            => $validated['name'],
             'description'     => $validated['description'] ?? null,
             'year'            => $validated['year'],
@@ -74,6 +72,14 @@ class AdminController extends Controller
 
     public function updateSession(Request $request, VotingSession $session): JsonResponse
     {
+        // Jika sesi sudah ARCHIVED, kunci permanen!
+        if ($session->status === 'ARCHIVED') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Sesi ini sudah diarsipkan (ARCHIVED) dan telah dikunci permanen. Sesi tidak dapat diubah lagi.',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'category_id'      => 'required|exists:categories,id',
             'name'             => 'required|string|max:150',
@@ -119,6 +125,14 @@ class AdminController extends Controller
 
     public function updateStatus(Request $request, VotingSession $session): JsonResponse
     {
+        // Aturan Penguncian Permanen (Requirement 5)
+        if ($session->status === 'ARCHIVED') {
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Sesi ini sudah diakhiri dan dikunci permanen di History. Tidak dapat diaktivasi ulang.',
+            ], 422);
+        }
+
         $validated = $request->validate([
             'status' => ['required', Rule::in(['DRAFT', 'ACTIVE', 'ARCHIVED'])],
         ]);
@@ -166,6 +180,21 @@ class AdminController extends Controller
         ]);
     }
 
+    public function activateKloter(Request $request, VotingSession $session): JsonResponse
+    {
+        $validated = $request->validate([
+            'kloter' => 'nullable|string',
+        ]);
+
+        $session->update(['active_kloter' => $validated['kloter'] ?? null]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => $validated['kloter'] ? "Kloter '{$validated['kloter']}' resmi diaktifkan untuk akses bilik" : 'Aktifkan kloter dibebaskan',
+            'data'    => $session,
+        ]);
+    }
+
     public function completeKloter(Request $request, VotingSession $session): JsonResponse
     {
         $validated = $request->validate([
@@ -177,8 +206,15 @@ class AdminController extends Controller
 
         if (!in_array($kloter, $currentKloters)) {
             $currentKloters[] = $kloter;
-            $session->update(['completed_kloters' => $currentKloters]);
         }
+
+        // Reset active_kloter jika kloter yang diselesaikan adalah kloter aktif saat ini
+        $newActiveKloter = ($session->active_kloter === $kloter) ? null : $session->active_kloter;
+
+        $session->update([
+            'completed_kloters' => $currentKloters,
+            'active_kloter'     => $newActiveKloter,
+        ]);
 
         return response()->json([
             'status'  => 'success',
@@ -208,14 +244,59 @@ class AdminController extends Controller
         ]);
     }
 
-    // === Kategori (Categories) ===
+    // === Master Data Kelas (School Classes) ===
+
+    public function getSchoolClasses(): JsonResponse
+    {
+        $classes = SchoolClass::oldest('name')->get();
+
+        if ($classes->isEmpty()) {
+            $defaults = ['10 PPLG 1', '10 PPLG 2', '10 ANIMASI 1', '11 PPLG 1', '11 PPLG 2', '12 PPLG 1'];
+            foreach ($defaults as $def) {
+                SchoolClass::firstOrCreate(['name' => $def]);
+            }
+            $classes = SchoolClass::oldest('name')->get();
+        }
+
+        return response()->json(['status' => 'success', 'data' => $classes]);
+    }
+
+    public function storeSchoolClass(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:100|unique:school_classes,name',
+        ]);
+
+        $schoolClass = SchoolClass::create($validated);
+
+        return response()->json(['status' => 'success', 'message' => 'Data kelas berhasil ditambahkan', 'data' => $schoolClass], 201);
+    }
+
+    public function updateSchoolClass(Request $request, SchoolClass $schoolClass): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100', Rule::unique('school_classes', 'name')->ignore($schoolClass->id)],
+        ]);
+
+        $schoolClass->update($validated);
+
+        return response()->json(['status' => 'success', 'message' => 'Data kelas berhasil diperbarui', 'data' => $schoolClass]);
+    }
+
+    public function destroySchoolClass(SchoolClass $schoolClass): JsonResponse
+    {
+        $schoolClass->delete();
+        return response()->json(['status' => 'success', 'message' => 'Data kelas berhasil dihapus']);
+    }
+
+    // === Kategori Sesi (Session Categories) ===
 
     public function getCategories(): JsonResponse
     {
         $categories = Category::oldest()->get();
 
         if ($categories->isEmpty()) {
-            $defaults = ['Kelas', 'Guru', 'Staf', 'Mitra'];
+            $defaults = ['Ketua & Wakil Ketua OSIS', 'Ketua & Wakil Ketua MPK', 'Pemilihan Ekskul'];
             foreach ($defaults as $def) {
                 Category::create(['name' => $def]);
             }
@@ -253,7 +334,7 @@ class AdminController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Kategori berhasil dihapus']);
     }
 
-    // === Kandidat (Candidates) ===
+    // === Kandidat Paslon (Pasangan Calon) ===
 
     public function getCandidates(VotingSession $session): JsonResponse
     {
@@ -265,42 +346,65 @@ class AdminController extends Controller
     {
         $validated = $request->validate([
             'candidate_number' => 'nullable|string|max:20',
-            'name'             => 'required|string|max:150',
-            'photo'            => 'nullable|image|max:2048', // maks 2MB
+            'name'             => 'required|string|max:150', // Nama Ketua
+            'wakil_name'       => 'nullable|string|max:150', // Nama Wakil Ketua
+            'photo'            => 'nullable|image|max:2048',
+            'ketua_photo'      => 'nullable|image|max:2048',
+            'wakil_photo'      => 'nullable|image|max:2048',
             'vision'           => 'required|string',
             'mission'          => 'required|string',
             'experience'       => 'nullable|string',
+            'wakil_experience' => 'nullable|string',
         ]);
 
-        // Penomoran otomatis jika tidak diisi atau diset otomatis
         $existingCount = $session->candidates()->count();
         $candidateNumber = !empty($validated['candidate_number']) 
             ? $validated['candidate_number'] 
             : (string)($existingCount + 1);
 
-        $photoPath = null;
-        if ($request->hasFile('photo')) {
+        $targetDir = public_path('uploads/candidates');
+        if (!File::exists($targetDir)) {
+            File::makeDirectory($targetDir, 0755, true);
+        }
+
+        // Handle Ketua photo
+        $ketuaPhotoPath = null;
+        if ($request->hasFile('ketua_photo')) {
+            $file = $request->file('ketua_photo');
+            $filename = time() . '_ketua_' . $file->getClientOriginalName();
+            $file->move($targetDir, $filename);
+            $ketuaPhotoPath = '/uploads/candidates/' . $filename;
+        } elseif ($request->hasFile('photo')) {
             $file = $request->file('photo');
             $filename = time() . '_' . $file->getClientOriginalName();
-            $targetDir = public_path('uploads/candidates');
-            if (!File::exists($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
             $file->move($targetDir, $filename);
-            $photoPath = '/uploads/candidates/' . $filename;
+            $ketuaPhotoPath = '/uploads/candidates/' . $filename;
+        }
+
+        // Handle Wakil photo
+        $wakilPhotoPath = null;
+        if ($request->hasFile('wakil_photo')) {
+            $file = $request->file('wakil_photo');
+            $filename = time() . '_wakil_' . $file->getClientOriginalName();
+            $file->move($targetDir, $filename);
+            $wakilPhotoPath = '/uploads/candidates/' . $filename;
         }
 
         $candidate = $session->candidates()->create([
             'candidate_number' => $candidateNumber,
             'name'             => $validated['name'],
-            'photo_path'       => $photoPath,
+            'wakil_name'       => $validated['wakil_name'] ?? null,
+            'photo_path'       => $ketuaPhotoPath,
+            'ketua_photo_path' => $ketuaPhotoPath,
+            'wakil_photo_path' => $wakilPhotoPath,
             'vision'           => $validated['vision'],
             'mission'          => $validated['mission'],
             'experience'       => $validated['experience'] ?? null,
+            'wakil_experience' => $validated['wakil_experience'] ?? null,
             'votes_count'      => 0,
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Kandidat berhasil ditambahkan', 'data' => $candidate], 201);
+        return response()->json(['status' => 'success', 'message' => 'Paslon kandidat berhasil ditambahkan', 'data' => $candidate], 201);
     }
 
     public function updateCandidate(Request $request, Candidate $candidate): JsonResponse
@@ -308,54 +412,67 @@ class AdminController extends Controller
         $validated = $request->validate([
             'candidate_number' => 'required|string|max:20',
             'name'             => 'required|string|max:150',
+            'wakil_name'       => 'nullable|string|max:150',
             'photo'            => 'nullable|image|max:2048',
+            'ketua_photo'      => 'nullable|image|max:2048',
+            'wakil_photo'      => 'nullable|image|max:2048',
             'vision'           => 'required|string',
             'mission'          => 'required|string',
             'experience'       => 'nullable|string',
+            'wakil_experience' => 'nullable|string',
         ]);
 
-        $photoPath = $candidate->photo_path;
-        if ($request->hasFile('photo')) {
-            // Hapus foto lama jika ada
-            if ($candidate->photo_path) {
-                $oldPath = public_path($candidate->photo_path);
-                if (File::exists($oldPath)) {
-                    File::delete($oldPath);
-                }
-            }
+        $targetDir = public_path('uploads/candidates');
+        if (!File::exists($targetDir)) {
+            File::makeDirectory($targetDir, 0755, true);
+        }
 
-            $file = $request->file('photo');
-            $filename = time() . '_' . $file->getClientOriginalName();
-            $targetDir = public_path('uploads/candidates');
-            if (!File::exists($targetDir)) {
-                File::makeDirectory($targetDir, 0755, true);
-            }
+        $ketuaPhotoPath = $candidate->ketua_photo_path ?? $candidate->photo_path;
+        if ($request->hasFile('ketua_photo') || $request->hasFile('photo')) {
+            $file = $request->file('ketua_photo') ?? $request->file('photo');
+            $filename = time() . '_ketua_' . $file->getClientOriginalName();
             $file->move($targetDir, $filename);
-            $photoPath = '/uploads/candidates/' . $filename;
+            $ketuaPhotoPath = '/uploads/candidates/' . $filename;
+        }
+
+        $wakilPhotoPath = $candidate->wakil_photo_path;
+        if ($request->hasFile('wakil_photo')) {
+            $file = $request->file('wakil_photo');
+            $filename = time() . '_wakil_' . $file->getClientOriginalName();
+            $file->move($targetDir, $filename);
+            $wakilPhotoPath = '/uploads/candidates/' . $filename;
         }
 
         $candidate->update([
             'candidate_number' => $validated['candidate_number'],
             'name'             => $validated['name'],
-            'photo_path'       => $photoPath,
+            'wakil_name'       => $validated['wakil_name'] ?? null,
+            'photo_path'       => $ketuaPhotoPath,
+            'ketua_photo_path' => $ketuaPhotoPath,
+            'wakil_photo_path' => $wakilPhotoPath,
             'vision'           => $validated['vision'],
             'mission'          => $validated['mission'],
+            'experience'       => $validated['experience'] ?? null,
+            'wakil_experience' => $validated['wakil_experience'] ?? null,
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Kandidat berhasil diperbarui', 'data' => $candidate]);
+        return response()->json(['status' => 'success', 'message' => 'Data Paslon berhasil diperbarui', 'data' => $candidate]);
     }
 
     public function destroyCandidate(Candidate $candidate): JsonResponse
     {
-        if ($candidate->photo_path) {
-            $oldPath = public_path($candidate->photo_path);
-            if (File::exists($oldPath)) {
-                File::delete($oldPath);
-            }
+        if ($candidate->photo_path && File::exists(public_path($candidate->photo_path))) {
+            File::delete(public_path($candidate->photo_path));
+        }
+        if ($candidate->ketua_photo_path && File::exists(public_path($candidate->ketua_photo_path))) {
+            File::delete(public_path($candidate->ketua_photo_path));
+        }
+        if ($candidate->wakil_photo_path && File::exists(public_path($candidate->wakil_photo_path))) {
+            File::delete(public_path($candidate->wakil_photo_path));
         }
         $candidate->delete();
 
-        return response()->json(['status' => 'success', 'message' => 'Kandidat berhasil dihapus']);
+        return response()->json(['status' => 'success', 'message' => 'Paslon kandidat berhasil dihapus']);
     }
 
     // === Pemilih (Voters) ===
@@ -440,14 +557,17 @@ class AdminController extends Controller
 
     public function getVoterClasses(): JsonResponse
     {
-        $classes = Voter::whereNotNull('class')
+        $schoolClasses = SchoolClass::pluck('name')->toArray();
+        $voterClasses = Voter::whereNotNull('class')
             ->where('class', '!=', '')
             ->distinct()
             ->pluck('class')
-            ->sort()
-            ->values();
+            ->toArray();
 
-        return response()->json(['status' => 'success', 'data' => $classes]);
+        $merged = array_unique(array_merge($schoolClasses, $voterClasses));
+        sort($merged);
+
+        return response()->json(['status' => 'success', 'data' => array_values($merged)]);
     }
 
     public function importVoters(Request $request): JsonResponse

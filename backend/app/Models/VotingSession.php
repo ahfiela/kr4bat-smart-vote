@@ -21,6 +21,7 @@ class VotingSession extends Model
         'allowed_roles',
         'allowed_classes',
         'completed_kloters',
+        'active_kloter',
         'allowed_voters',
         'results_published',
     ];

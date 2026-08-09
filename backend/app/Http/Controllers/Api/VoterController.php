@@ -27,6 +27,19 @@ class VoterController extends Controller
                     if (!empty($session->allowed_roles) && !in_array($voter->role, $session->allowed_roles)) {
                         return false;
                     }
+
+                    // Periksa Kloter Aktif (Requirement 3)
+                    if (!empty($session->active_kloter)) {
+                        $activeKloter = $session->active_kloter;
+                        if ($activeKloter === 'GURU_STAF') {
+                            if ($voter->role !== 'GURU_STAF') return false;
+                        } elseif ($activeKloter === 'MITRA') {
+                            if ($voter->role !== 'MITRA') return false;
+                        } else {
+                            if ($voter->class !== $activeKloter) return false;
+                        }
+                    }
+
                     // Periksa batasan kelas jika ada
                     if (!empty($session->allowed_classes)) {
                         if (empty($voter->class) || !in_array($voter->class, $session->allowed_classes)) {
@@ -74,6 +87,27 @@ class VoterController extends Controller
                     'status'  => 'error',
                     'message' => 'Peran pengguna kamu tidak memiliki hak akses pada bilik ini.',
                 ], 403);
+            }
+
+            // Periksa Kloter Aktif (Requirement 3)
+            if (!empty($session->active_kloter)) {
+                $activeKloter = $session->active_kloter;
+                $isKloterMatch = false;
+
+                if ($activeKloter === 'GURU_STAF' && $voter->role === 'GURU_STAF') {
+                    $isKloterMatch = true;
+                } elseif ($activeKloter === 'MITRA' && $voter->role === 'MITRA') {
+                    $isKloterMatch = true;
+                } elseif ($voter->class === $activeKloter) {
+                    $isKloterMatch = true;
+                }
+
+                if (!$isKloterMatch) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => "Akses ditolak. Saat ini bilik suara sedang diprioritaskan khusus untuk kloter: '{$activeKloter}'. Silahkan tunggu giliran kloter Anda!",
+                    ], 403);
+                }
             }
 
             if (!empty($session->allowed_classes) && (empty($voter->class) || !in_array($voter->class, $session->allowed_classes))) {

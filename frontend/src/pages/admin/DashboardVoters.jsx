@@ -58,10 +58,16 @@ export default function DashboardVoters() {
 
   const fetchClasses = async () => {
     try {
-      const res = await apiClient.get('/admin/voters/classes');
-      if (res.data.status === 'success') {
-        setClasses(res.data.data);
-      }
+      const [schoolClassRes, voterClassRes] = await Promise.all([
+        apiClient.get('/admin/school-classes'),
+        apiClient.get('/admin/voters/classes'),
+      ]);
+
+      const masterClasses = schoolClassRes.data.status === 'success' ? schoolClassRes.data.data.map(c => c.name) : [];
+      const voterClasses = voterClassRes.data.status === 'success' ? voterClassRes.data.data : [];
+
+      const combined = Array.from(new Set([...masterClasses, ...voterClasses])).sort();
+      setClasses(combined);
     } catch (err) {
       console.error('Gagal memuat daftar kelas:', err);
     }
@@ -202,12 +208,12 @@ export default function DashboardVoters() {
     if (role === 'SISWA') {
       return (
         <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1.5">Pilihan Kelas</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Pilihan Kelas</label>
           {classes.length > 0 ? (
             <select
               value={voterClass}
               onChange={(e) => setVoterClass(e.target.value)}
-              className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
             >
               <option value="">Pilih Kelas</option>
               {classes.map((cls) => (
@@ -220,7 +226,7 @@ export default function DashboardVoters() {
               value={voterClass}
               onChange={(e) => setVoterClass(e.target.value)}
               placeholder="Misal: 10 PPLG 1"
-              className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-800/60 border border-white/5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+              className="w-full rounded-xl px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500"
             />
           )}
         </div>
@@ -230,11 +236,11 @@ export default function DashboardVoters() {
     if (role === 'GURU_STAF') {
       return (
         <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1.5">Posisi / Jabatan</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Posisi / Jabatan</label>
           <select
             value={voterClass}
             onChange={(e) => setVoterClass(e.target.value)}
-            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
           >
             <option value="">Pilih Posisi/Jabatan</option>
             <option value="Guru">Guru</option>
@@ -248,11 +254,11 @@ export default function DashboardVoters() {
     if (role === 'MITRA') {
       return (
         <div>
-          <label className="block text-xs font-bold text-slate-400 mb-1.5">Bidang Operasional</label>
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">Bidang Operasional</label>
           <select
             value={voterClass}
             onChange={(e) => setVoterClass(e.target.value)}
-            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-850 border border-white/5 text-slate-200 focus:outline-none focus:border-blue-500"
+            className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
           >
             <option value="">Pilih Bidang Operasional</option>
             <option value="Kebersihan">Kebersihan</option>

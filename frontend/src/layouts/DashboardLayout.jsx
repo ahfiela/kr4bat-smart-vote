@@ -66,20 +66,24 @@ export default function DashboardLayout() {
 
             <nav className="space-y-1.5">
               <Link to="/admin/sessions" className={getMenuClass('/admin/sessions')}>
-                <ion-icon name="time-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <ion-icon name="grid-outline" style={{ fontSize: '18px' }}></ion-icon>
                 <span>Bilik Suara Aktif</span>
               </Link>
-              <Link to="/admin/categories" className={getMenuClass('/admin/categories')}>
-                <ion-icon name="list-outline" style={{ fontSize: '18px' }}></ion-icon>
-                <span>Lis Hak Pilih & Kelas</span>
+              <Link to="/admin/classes" className={getMenuClass('/admin/classes')}>
+                <ion-icon name="school-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <span>Manajemen Kelas</span>
               </Link>
-              <Link to="/admin/candidates" className={getMenuClass('/admin/candidates')}>
-                <ion-icon name="people-outline" style={{ fontSize: '18px' }}></ion-icon>
-                <span>Data Kandidat</span>
+              <Link to="/admin/categories" className={getMenuClass('/admin/categories')}>
+                <ion-icon name="shapes-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <span>Kategori Sesi</span>
               </Link>
               <Link to="/admin/voters" className={getMenuClass('/admin/voters')}>
                 <ion-icon name="id-card-outline" style={{ fontSize: '18px' }}></ion-icon>
                 <span>Daftar Pemilih</span>
+              </Link>
+              <Link to="/admin/history" className={getMenuClass('/admin/history')}>
+                <ion-icon name="archive-outline" style={{ fontSize: '18px' }}></ion-icon>
+                <span>History (Riwayat)</span>
               </Link>
               <Link to="/admin/settings" className={getMenuClass('/admin/settings')}>
                 <ion-icon name="settings-outline" style={{ fontSize: '18px' }}></ion-icon>

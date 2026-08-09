@@ -8,9 +8,10 @@ import DashboardLayout from './layouts/DashboardLayout';
 import DashboardSession from './pages/admin/DashboardSession';
 import DashboardVoter from './pages/voter/DashboardVoter';
 
+import DashboardSchoolClasses from './pages/admin/DashboardSchoolClasses';
 import DashboardCategory from './pages/admin/DashboardCategory';
-import DashboardCandidates from './pages/admin/DashboardCandidates';
 import DashboardVoters from './pages/admin/DashboardVoters';
+import DashboardHistory from './pages/admin/DashboardHistory';
 import DashboardSettingsAdmin from './pages/admin/DashboardSettingsAdmin';
 
 export default function App() {
@@ -30,9 +31,10 @@ export default function App() {
           >
             <Route index element={<Navigate to="/admin/sessions" replace />} />
             <Route path="sessions" element={<DashboardSession />} />
+            <Route path="classes" element={<DashboardSchoolClasses />} />
             <Route path="categories" element={<DashboardCategory />} />
-            <Route path="candidates" element={<DashboardCandidates />} />
             <Route path="voters" element={<DashboardVoters />} />
+            <Route path="history" element={<DashboardHistory />} />
             <Route path="settings" element={<DashboardSettingsAdmin />} />
           </Route>
 

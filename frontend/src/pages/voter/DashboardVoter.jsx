@@ -338,34 +338,55 @@ export default function DashboardVoter() {
                   className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between hover:shadow-md transition-all duration-200 space-y-4"
                 >
                   <div className="space-y-3">
-                    {/* Photo Box */}
-                    <div className="w-full aspect-3/4 rounded-xl overflow-hidden bg-red-600 flex items-center justify-center border border-slate-100 shadow-inner relative">
-                      {cand.photo_path ? (
-                        <img
-                          src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${cand.photo_path}`}
-                          alt={cand.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'block';
-                          }}
-                        />
-                      ) : null}
-                      <span
-                        className="text-white font-extrabold text-2xl"
-                        style={{ display: cand.photo_path ? 'none' : 'block' }}
-                      >
-                        {cand.candidate_number}
+                    {/* Paslon Number Badge */}
+                    <div className="flex items-center justify-center">
+                      <span className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-md">
+                        #{cand.candidate_number}
                       </span>
                     </div>
 
-                    {/* Candidate Name & Number */}
+                    {/* Photo Pair Ketua & Wakil */}
+                    <div className="flex gap-2">
+                      <div className="flex-1 rounded-xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center relative">
+                        {cand.ketua_photo_path ? (
+                          <img
+                            src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${cand.ketua_photo_path}`}
+                            alt={cand.name}
+                            className="w-full h-full object-cover object-top"
+                          />
+                        ) : (
+                          <span className="text-slate-400 text-xs font-bold">Ketua</span>
+                        )}
+                        <span className="absolute bottom-1 left-1 text-[9px] font-black bg-black/50 text-white px-1.5 py-0.5 rounded-md">KETUA</span>
+                      </div>
+                      {cand.wakil_name && (
+                        <div className="flex-1 rounded-xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center relative">
+                          {cand.wakil_photo_path ? (
+                            <img
+                              src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${cand.wakil_photo_path}`}
+                              alt={cand.wakil_name}
+                              className="w-full h-full object-cover object-top"
+                            />
+                          ) : (
+                            <span className="text-slate-400 text-xs font-bold">Wakil</span>
+                          )}
+                          <span className="absolute bottom-1 left-1 text-[9px] font-black bg-black/50 text-white px-1.5 py-0.5 rounded-md">WAKIL</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Candidate Paslon Names */}
                     <div>
-                      <h3 className="font-extrabold text-slate-900 text-base leading-tight truncate">
+                      <h3 className="font-extrabold text-slate-900 text-sm leading-tight">
                         {cand.name}
                       </h3>
-                      <p className="text-xs text-slate-400 font-medium mt-0.5">
-                        Kandidat {cand.candidate_number}
+                      {cand.wakil_name && (
+                        <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                          & {cand.wakil_name}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                        Pasangan Calon #{cand.candidate_number}
                       </p>
                     </div>
                   </div>
@@ -416,36 +437,51 @@ export default function DashboardVoter() {
 
             {/* Candidate Detail Cards Layout */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-              {/* Left Identity Card */}
+              {/* Left Identity Card - Paslon */}
               <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm text-center space-y-4">
-                <div className="w-full aspect-3/4 rounded-2xl overflow-hidden bg-red-600 flex items-center justify-center shadow-inner">
-                  {viewingProfileCandidate.photo_path ? (
-                    <img
-                      src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${viewingProfileCandidate.photo_path}`}
-                      alt={viewingProfileCandidate.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : null}
-                  <span className="text-white font-extrabold text-3xl">
+                <div className="inline-flex items-center justify-center gap-2 mb-1">
+                  <span className="w-10 h-10 rounded-2xl bg-blue-600 text-white font-black text-base flex items-center justify-center shadow-md">
                     #{viewingProfileCandidate.candidate_number}
                   </span>
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pasangan Calon</span>
                 </div>
 
-                <div>
-                  <h3 className="font-extrabold text-slate-900 text-lg">{viewingProfileCandidate.name}</h3>
-                  <p className="text-xs text-slate-400 font-medium mt-0.5">
-                    Kandidat Nomor {viewingProfileCandidate.candidate_number}
-                  </p>
+                {/* Dual photo Ketua & Wakil */}
+                <div className="flex gap-3">
+                  <div className="flex-1 space-y-1">
+                    <div className="rounded-2xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center">
+                      {viewingProfileCandidate.ketua_photo_path ? (
+                        <img src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${viewingProfileCandidate.ketua_photo_path}`} alt={viewingProfileCandidate.name} className="w-full h-full object-cover object-top" />
+                      ) : (
+                        <span className="text-slate-400 text-xs font-bold">No Photo</span>
+                      )}
+                    </div>
+                    <p className="text-[10px] font-extrabold text-blue-600 uppercase">Ketua</p>
+                    <p className="text-xs font-bold text-slate-800 leading-tight">{viewingProfileCandidate.name}</p>
+                    {viewingProfileCandidate.experience && <p className="text-[10px] text-slate-400">{viewingProfileCandidate.experience}</p>}
+                  </div>
+
+                  {viewingProfileCandidate.wakil_name && (
+                    <div className="flex-1 space-y-1">
+                      <div className="rounded-2xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center">
+                        {viewingProfileCandidate.wakil_photo_path ? (
+                          <img src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${viewingProfileCandidate.wakil_photo_path}`} alt={viewingProfileCandidate.wakil_name} className="w-full h-full object-cover object-top" />
+                        ) : (
+                          <span className="text-slate-400 text-xs font-bold">No Photo</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] font-extrabold text-emerald-600 uppercase">Wakil</p>
+                      <p className="text-xs font-bold text-slate-800 leading-tight">{viewingProfileCandidate.wakil_name}</p>
+                      {viewingProfileCandidate.wakil_experience && <p className="text-[10px] text-slate-400">{viewingProfileCandidate.wakil_experience}</p>}
+                    </div>
+                  )}
                 </div>
 
                 <button
                   onClick={() => setSelectingCandidate(viewingProfileCandidate)}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs transition-all cursor-pointer shadow-md"
                 >
-                  Pilih Kandidat Ini
+                  Pilih Paslon Ini
                 </button>
               </div>
 
@@ -494,7 +530,7 @@ export default function DashboardVoter() {
               <div className="space-y-1">
                 <h3 className="text-xl font-extrabold text-slate-900">Konfirmasi Pilihan</h3>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed px-2">
-                  Anda akan memberi suara kepada <span className="font-extrabold text-slate-900">{selectingCandidate.name}</span> sebagai kandidat {activeBooth?.session?.name || 'Ketua OSIS'}.
+                  Anda akan memberi suara kepada Paslon Nomor <span className="font-extrabold text-slate-900">#{selectingCandidate.candidate_number} — {selectingCandidate.name}{selectingCandidate.wakil_name ? ` & ${selectingCandidate.wakil_name}` : ''}</span> pada sesi {activeBooth?.session?.name || 'pemilihan ini'}.
                 </p>
               </div>
 

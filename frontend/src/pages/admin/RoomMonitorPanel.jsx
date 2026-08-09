@@ -36,10 +36,16 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
 
   const fetchClasses = async () => {
     try {
-      const res = await apiClient.get('/admin/voters/classes');
-      if (res.data.status === 'success') {
-        setClasses(res.data.data);
-      }
+      const [classRes, catRes] = await Promise.all([
+        apiClient.get('/admin/voters/classes'),
+        apiClient.get('/admin/categories'),
+      ]);
+
+      const classList = classRes.data.status === 'success' ? classRes.data.data : [];
+      const catList = catRes.data.status === 'success' ? catRes.data.data.map((c) => c.name) : [];
+
+      const combined = Array.from(new Set([...classList, ...catList])).sort();
+      setClasses(combined);
     } catch (err) {
       console.error('Gagal memuat daftar kelas:', err);
     }
@@ -84,17 +90,34 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
   };
 
   const handleEndSession = async () => {
-    if (!window.confirm('Akhiri sesi ini? Bilik akan ditutup seketika dan dipindahkan ke History/Arsip.')) return;
+    if (!window.confirm('PERHATIAN: Mengakhiri sesi ini akan MENGUNCI BILIK PERMANEN. Sesi tidak dapat diaktivasi ulang dan akan dipindahkan ke menu History (Riwayat). Yakin ingin mengakhiri sesi?')) return;
     resetMessages();
     try {
       const res = await apiClient.patch(`/admin/sessions/${session.id}/status`, { status: 'ARCHIVED' });
       if (res.data.status === 'success') {
-        setSuccessMessage('Sesi bilik telah diakhiri dan dipindahkan ke Arsip.');
+        setSuccessMessage('Sesi bilik telah diakhiri dan dikunci permanen di History.');
         fetchSessionData();
         onUpdateSession && onUpdateSession();
       }
     } catch (err) {
       setErrorMessage(err.response?.data?.message || 'Gagal mengakhiri sesi bilik');
+    }
+  };
+
+  // Activate Live Kloter (Requirement 3)
+  const handleActivateKloter = async () => {
+    if (!selectedKloter) return;
+    resetMessages();
+    try {
+      const res = await apiClient.post(`/admin/sessions/${session.id}/kloter/activate`, {
+        kloter: selectedKloter,
+      });
+      if (res.data.status === 'success') {
+        setSuccessMessage(`Kloter '${selectedKloter}' resmi AKTIF! Pemilih di luar kloter ini akan ditolak otomatis.`);
+        fetchSessionData();
+      }
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Gagal mengaktifkan kloter');
     }
   };
 
@@ -254,13 +277,32 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
               Pilih kloter kelas / kategori yang sedang diproses voting. Kloter yang diselesaikan akan dikunci dan dihapus dari dropdown berikutnya.
             </p>
 
+            {sessionDetail.active_kloter && (
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black text-emerald-600 uppercase tracking-wider block">KLOTER AKTIF SAAT INI</span>
+                  <span className="text-sm font-extrabold text-emerald-900">{sessionDetail.active_kloter}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await apiClient.post(`/admin/sessions/${session.id}/kloter/activate`, { kloter: null });
+                    fetchSessionData();
+                  }}
+                  className="text-[10px] font-bold text-red-600 hover:underline cursor-pointer"
+                >
+                  Bebaskan Kloter
+                </button>
+              </div>
+            )}
+
             <div className="space-y-3">
               <select
                 value={selectedKloter}
                 onChange={(e) => setSelectedKloter(e.target.value)}
                 className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-blue-500 font-medium"
               >
-                <option value="">-- Pilih Kloter Aktif --</option>
+                <option value="">-- Pilih Kloter Kelas --</option>
                 {availableKloterOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -268,14 +310,25 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
                 ))}
               </select>
 
-              <button
-                type="button"
-                disabled={!selectedKloter}
-                onClick={handleCompleteKloter}
-                className="w-full rounded-xl py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer"
-              >
-                Kunci & Selesaikan Kloter Ini
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={!selectedKloter}
+                  onClick={handleActivateKloter}
+                  className="rounded-xl py-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white transition-all cursor-pointer shadow-xs"
+                >
+                  ⚡ Aktifkan Kloter
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!selectedKloter}
+                  onClick={handleCompleteKloter}
+                  className="rounded-xl py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer shadow-xs"
+                >
+                  🔒 Kunci Kloter
+                </button>
+              </div>
             </div>
 
             {completedKloters.length > 0 && (
@@ -391,9 +444,11 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
                             #{candidate.candidate_number}
                           </div>
                           <div>
-                            <h4 className="font-bold text-slate-900 text-sm">{candidate.name}</h4>
-                            {candidate.experience && (
-                              <p className="text-[11px] text-slate-500 font-medium">{candidate.experience}</p>
+                            <h4 className="font-bold text-slate-900 text-sm">
+                              {candidate.name} {candidate.wakil_name ? `& ${candidate.wakil_name}` : ''}
+                            </h4>
+                            {candidate.vision && (
+                              <p className="text-[11px] text-slate-500 font-medium">Visi: {candidate.vision}</p>
                             )}
                           </div>
                         </div>

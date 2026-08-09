@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
 
 export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
@@ -6,6 +6,8 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
   const [step, setStep] = useState(1);
 
   // Step 1 Form
+  const [categories, setCategories] = useState([]);
+  const [categoryId, setCategoryId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [roomCode, setRoomCode] = useState('');
@@ -14,17 +16,40 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
   // Created Room Data
   const [createdSession, setCreatedSession] = useState(null);
 
-  // Step 2 Form (Candidate)
-  const [candidateName, setCandidateName] = useState('');
+  // Step 2 Form (Paslon Pasangan Calon)
+  const [candidateName, setCandidateName] = useState(''); // Nama Ketua
+  const [wakilName, setWakilName] = useState(''); // Nama Wakil Ketua
   const [vision, setVision] = useState('');
   const [mission, setMission] = useState('');
-  const [experience, setExperience] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [experience, setExperience] = useState(''); // Pengalaman Ketua
+  const [wakilExperience, setWakilExperience] = useState(''); // Pengalaman Wakil
+  const [ketuaPhoto, setKetuaPhoto] = useState(null);
+  const [wakilPhoto, setWakilPhoto] = useState(null);
   const [addedCandidates, setAddedCandidates] = useState([]);
 
   // States
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
+
+  const fetchCategories = async () => {
+    try {
+      const res = await apiClient.get('/admin/categories');
+      if (res.data.status === 'success') {
+        setCategories(res.data.data);
+        if (res.data.data.length > 0) {
+          setCategoryId(res.data.data[0].id.toString());
+        }
+      }
+    } catch (err) {
+      console.error('Gagal memuat kategori:', err);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -41,6 +66,12 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
   const handleStep1Submit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
+
+    if (!categoryId) {
+      setErrorMessage('Kategori Sesi wajib dipilih!');
+      return;
+    }
+
     setIsLoading(true);
 
     const generatedCode = roomCode.trim()
@@ -49,6 +80,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
 
     try {
       const res = await apiClient.post('/admin/sessions', {
+        category_id: categoryId,
         name,
         description,
         room_code: generatedCode,
@@ -80,10 +112,13 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
 
     const formData = new FormData();
     formData.append('name', candidateName);
+    if (wakilName) formData.append('wakil_name', wakilName);
     formData.append('vision', vision);
     formData.append('mission', mission);
     if (experience) formData.append('experience', experience);
-    if (photo) formData.append('photo', photo);
+    if (wakilExperience) formData.append('wakil_experience', wakilExperience);
+    if (ketuaPhoto) formData.append('ketua_photo', ketuaPhoto);
+    if (wakilPhoto) formData.append('wakil_photo', wakilPhoto);
 
     // Auto candidate number
     const autoNum = (addedCandidates.length + 1).toString();
@@ -97,13 +132,16 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
       if (res.data.status === 'success') {
         setAddedCandidates([...addedCandidates, res.data.data]);
         setCandidateName('');
+        setWakilName('');
         setVision('');
         setMission('');
         setExperience('');
-        setPhoto(null);
+        setWakilExperience('');
+        setKetuaPhoto(null);
+        setWakilPhoto(null);
       }
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Gagal menambahkan kandidat');
+      setErrorMessage(err.response?.data?.message || 'Gagal menambahkan Paslon kandidat');
     } finally {
       setIsLoading(false);
     }
@@ -138,10 +176,13 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
     setAllowedRoles(['SISWA']);
     setCreatedSession(null);
     setCandidateName('');
+    setWakilName('');
     setVision('');
     setMission('');
     setExperience('');
-    setPhoto(null);
+    setWakilExperience('');
+    setKetuaPhoto(null);
+    setWakilPhoto(null);
     setAddedCandidates([]);
     setErrorMessage('');
     onClose();
@@ -159,8 +200,8 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                 TAHAP {step} DARI 3
               </span>
               <h2 className="font-extrabold text-slate-900 text-base tracking-tight">
-                {step === 1 && 'Detail Identitas & Scope Hak Pilih (Level 1)'}
-                {step === 2 && 'Input Data Kandidat Terintegrasi'}
+                {step === 1 && 'Identitas & Scope Kategori Sesi (Level 1)'}
+                {step === 2 && 'Input Pasangan Calon (Paslon)'}
                 {step === 3 && 'Aktivasi Room Sesi Pemilihan'}
               </h2>
             </div>
@@ -191,8 +232,8 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                   {s < step ? '✓' : s}
                 </div>
                 <span className="hidden sm:block">
-                  {s === 1 && 'Identitas'}
-                  {s === 2 && 'Kandidat'}
+                  {s === 1 && 'Identitas & Kategori'}
+                  {s === 2 && 'Paslon'}
                   {s === 3 && 'Aktivasi'}
                 </span>
               </div>
@@ -209,19 +250,38 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
             </div>
           )}
 
-          {/* Step 1: Identitas & Level 1 Scope */}
+          {/* Step 1: Identitas & Level 1 Scope & Kategori */}
           {step === 1 && (
             <form onSubmit={handleStep1Submit} className="space-y-5">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama / Judul Room Vote *</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Contoh: Pilih Ketua Ekskul / Pemilihan Ketua OSIS"
-                  className="w-full rounded-xl px-4 py-3 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 transition-all"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Kategori Sesi *</label>
+                  <select
+                    required
+                    value={categoryId}
+                    onChange={(e) => setCategoryId(e.target.value)}
+                    className="w-full rounded-xl px-4 py-3 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="">-- Pilih Kategori Sesi --</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">Nama / Judul Room Vote *</label>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Contoh: Pemilihan Ketua OSIS 2026"
+                    className="w-full rounded-xl px-4 py-3 text-sm bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 transition-all"
+                  />
+                </div>
               </div>
 
               <div>
@@ -279,7 +339,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                         <input
                           type="checkbox"
                           checked={isChecked}
-                          onChange={() => {}} // handled by button click
+                          onChange={() => {}}
                           className="rounded accent-white"
                         />
                         <span>{roleObj.label}</span>
@@ -292,16 +352,16 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={isLoading || !name.trim()}
+                  disabled={isLoading || !name.trim() || !categoryId}
                   className="w-full rounded-xl py-3.5 text-sm font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer shadow-md shadow-blue-500/20 flex items-center justify-center gap-2"
                 >
-                  <span>{isLoading ? 'Membuat Room...' : 'Lanjut ke Tahap 2: Input Data Kandidat →'}</span>
+                  <span>{isLoading ? 'Membuat Room...' : 'Lanjut ke Tahap 2: Input Paslon Kandidat →'}</span>
                 </button>
               </div>
             </form>
           )}
 
-          {/* Step 2: Input Data Kandidat */}
+          {/* Step 2: Input Pasangan Calon (Paslon) */}
           {step === 2 && (
             <div className="space-y-5">
               <div className="bg-blue-50 border border-blue-100 p-4 rounded-2xl flex justify-between items-center">
@@ -311,89 +371,136 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                 </div>
                 <div className="text-right">
                   <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    {addedCandidates.length} Kandidat Terinput
+                    {addedCandidates.length} Paslon Terinput
                   </span>
                 </div>
               </div>
 
-              <form onSubmit={handleAddCandidate} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-4">
+              <form onSubmit={handleAddCandidate} className="bg-slate-50 border border-slate-200 p-5 rounded-2xl space-y-5">
                 <div className="flex justify-between items-center border-b border-slate-200 pb-2.5">
                   <h4 className="text-xs font-extrabold text-blue-600 uppercase tracking-wider">
-                    Form Input Kandidat (Nomor Urut Otomatis: #{addedCandidates.length + 1})
+                    Form Pasangan Calon (Paslon #{addedCandidates.length + 1})
                   </h4>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Kandidat *</label>
-                  <input
-                    type="text"
-                    required
-                    value={candidateName}
-                    onChange={(e) => setCandidateName(e.target.value)}
-                    placeholder="Nama Lengkap Kandidat"
-                    className="w-full rounded-xl px-4 py-2.5 text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 transition-all"
-                  />
+                {/* Section Ketua */}
+                <div className="bg-white p-4 rounded-2xl border border-slate-200 space-y-3">
+                  <h5 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>👤</span> Data Calon Ketua
+                  </h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Ketua *</label>
+                      <input
+                        type="text"
+                        required
+                        value={candidateName}
+                        onChange={(e) => setCandidateName(e.target.value)}
+                        placeholder="Nama Ketua Paslon"
+                        className="w-full rounded-xl px-4 py-2 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Pengalaman / Organisasi Ketua</label>
+                      <input
+                        type="text"
+                        value={experience}
+                        onChange={(e) => setExperience(e.target.value)}
+                        placeholder="Misal: Ketua OSIS SMP"
+                        className="w-full rounded-xl px-4 py-2 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Foto Ketua</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setKetuaPhoto(e.target.files?.[0] || null)}
+                      className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:cursor-pointer"
+                    />
+                  </div>
                 </div>
 
+                {/* Section Wakil Ketua (Otomatis Tampil saat Ketua Diisi) */}
+                {candidateName.trim() !== '' && (
+                  <div className="bg-white p-4 rounded-2xl border border-blue-200 space-y-3 animate-fade-in">
+                    <h5 className="text-xs font-black text-blue-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>👥</span> Data Calon Wakil Ketua
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Nama Lengkap Wakil Ketua</label>
+                        <input
+                          type="text"
+                          value={wakilName}
+                          onChange={(e) => setWakilName(e.target.value)}
+                          placeholder="Nama Wakil Paslon"
+                          className="w-full rounded-xl px-4 py-2 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">Pengalaman / Organisasi Wakil</label>
+                        <input
+                          type="text"
+                          value={wakilExperience}
+                          onChange={(e) => setWakilExperience(e.target.value)}
+                          placeholder="Misal: Sekjen MPK"
+                          className="w-full rounded-xl px-4 py-2 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Foto Wakil Ketua</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setWakilPhoto(e.target.files?.[0] || null)}
+                        className="w-full text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Visi & Misi Paslon */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Visi *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Visi Paslon *</label>
                     <textarea
                       rows="2"
                       required
                       value={vision}
                       onChange={(e) => setVision(e.target.value)}
-                      placeholder="Visi kandidat..."
-                      className="w-full rounded-xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 resize-none"
+                      placeholder="Visi bersama pasangan calon..."
+                      className="w-full rounded-xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500 resize-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Misi *</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Misi Paslon *</label>
                     <textarea
                       rows="2"
                       required
                       value={mission}
                       onChange={(e) => setMission(e.target.value)}
-                      placeholder="Misi kandidat..."
-                      className="w-full rounded-xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500 resize-none"
+                      placeholder="Misi bersama pasangan calon..."
+                      className="w-full rounded-xl px-4 py-2 text-sm bg-white border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500 resize-none"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Pengalaman Organisasi / Proker</label>
-                  <input
-                    type="text"
-                    value={experience}
-                    onChange={(e) => setExperience(e.target.value)}
-                    placeholder="Misal: Ketua OSIS SMP, Sekretaris Ekskul Paskibra..."
-                    className="w-full rounded-xl px-4 py-2.5 text-sm bg-white border border-slate-200 text-slate-800 placeholder-slate-400 font-medium focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Foto Kandidat <span className="text-slate-400 font-normal">(Opsional)</span></label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setPhoto(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:cursor-pointer hover:file:bg-blue-100"
-                  />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading || !candidateName.trim()}
-                  className="w-full rounded-xl py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                  className="w-full rounded-xl py-3 text-xs font-bold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                 >
-                  <span>+ Tambahkan Kandidat Nomor #{addedCandidates.length + 1}</span>
+                  <span>+ Simpan Paslon Nomor Urut #{addedCandidates.length + 1}</span>
                 </button>
               </form>
 
               {/* Added Candidates List */}
               {addedCandidates.length > 0 && (
                 <div className="space-y-2">
-                  <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Kandidat Terdaftar:</h4>
+                  <h4 className="text-xs font-extrabold text-slate-600 uppercase tracking-wider">Paslon Terdaftar:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {addedCandidates.map((cand) => (
                       <div key={cand.id} className="bg-white border border-slate-200 p-3 rounded-xl flex items-center gap-3 shadow-xs">
@@ -401,8 +508,10 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                           #{cand.candidate_number}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-bold text-slate-900 truncate">{cand.name}</p>
-                          {cand.experience && <p className="text-[10px] text-slate-400 truncate">{cand.experience}</p>}
+                          <p className="text-sm font-bold text-slate-900 truncate">
+                            {cand.name} {cand.wakil_name ? `& ${cand.wakil_name}` : ''}
+                          </p>
+                          <p className="text-[10px] text-slate-400 truncate">Visi: {cand.vision}</p>
                         </div>
                       </div>
                     ))}
@@ -433,7 +542,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
               <div>
                 <h3 className="text-xl font-extrabold text-slate-900">Siap Mengaktifkan Room Sesi!</h3>
                 <p className="text-xs text-slate-500 font-medium max-w-md mx-auto mt-1">
-                  Minimal 2 kandidat telah diinput. Klik tombol di bawah untuk mengubah status room bawaan (Draft) menuju status Siap Pakai (ACTIVE).
+                  Minimal 2 Paslon telah diinput. Klik tombol di bawah untuk mengubah status room bawaan (Draft) menuju status Siap Pakai (ACTIVE).
                 </p>
               </div>
 
@@ -441,7 +550,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                 <p className="text-xs text-slate-500 font-medium">Judul Room: <span className="font-extrabold text-slate-900">{createdSession?.name}</span></p>
                 <p className="text-xs text-slate-500 font-medium">Kode Room: <span className="font-mono font-extrabold text-blue-600">{createdSession?.room_code}</span></p>
                 <p className="text-xs text-slate-500 font-medium">Cakupan Hak Pilih (Level 1): <span className="font-extrabold text-slate-900">{allowedRoles.join(', ')}</span></p>
-                <p className="text-xs text-slate-500 font-medium">Total Kandidat: <span className="font-extrabold text-emerald-600">{addedCandidates.length} Personil</span></p>
+                <p className="text-xs text-slate-500 font-medium">Total Paslon: <span className="font-extrabold text-emerald-600">{addedCandidates.length} Pasangan Calon</span></p>
               </div>
 
               <div className="flex gap-3 max-w-md mx-auto pt-2">
@@ -450,7 +559,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
                   onClick={() => setStep(2)}
                   className="px-4 py-3 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
                 >
-                  ← Kembali Tambah Kandidat
+                  ← Tambah Paslon
                 </button>
 
                 <button
@@ -466,14 +575,6 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.97); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in { animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-      `}</style>
     </div>
   );
 }

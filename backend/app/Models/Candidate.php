@@ -11,10 +11,14 @@ class Candidate extends Model
         'voting_session_id',
         'candidate_number',
         'name',
+        'wakil_name',
         'photo_path',
+        'ketua_photo_path',
+        'wakil_photo_path',
         'vision',
         'mission',
         'experience',
+        'wakil_experience',
         'votes_count',
     ];
 

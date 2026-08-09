@@ -22,7 +22,14 @@ Route::prefix('v1')->group(function () {
             Route::patch('/sessions/{session}/status', [AdminController::class, 'updateStatus']);
             Route::post('/sessions/{session}/publish', [AdminController::class, 'publishResults']);
             Route::post('/sessions/{session}/kloter/complete', [AdminController::class, 'completeKloter']);
+            Route::post('/sessions/{session}/kloter/activate', [AdminController::class, 'activateKloter']);
             Route::post('/sessions/{session}/add-voter', [AdminController::class, 'addVoterToSession']);
+
+            // School Classes Master Data
+            Route::get('/school-classes', [AdminController::class, 'getSchoolClasses']);
+            Route::post('/school-classes', [AdminController::class, 'storeSchoolClass']);
+            Route::put('/school-classes/{schoolClass}', [AdminController::class, 'updateSchoolClass']);
+            Route::delete('/school-classes/{schoolClass}', [AdminController::class, 'destroySchoolClass']);
 
             // Categories
             Route::get('/categories', [AdminController::class, 'getCategories']);
