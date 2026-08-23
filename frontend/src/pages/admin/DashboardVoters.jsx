@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import apiClient from '../../api/client';
 import PasswordInput from '../../components/PasswordInput';
 
@@ -24,8 +25,9 @@ export default function DashboardVoters() {
   // Editing state
   const [editingId, setEditingId] = useState(null);
 
-  // CSV Import File
+  // Import Massal
   const [importFile, setImportFile] = useState(null);
+  const [importRole, setImportRole] = useState('SISWA');
 
   // States
   const [isLoading, setIsLoading] = useState(false);
@@ -157,6 +159,49 @@ export default function DashboardVoters() {
     }
   };
 
+  const parseImportFile = async (file) => {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    if (!sheet) throw new Error('File tidak memiliki sheet yang bisa dibaca.');
+
+    // raw:false agar nilai teks (mis. NISN dengan nol di depan) tetap utuh
+    const grid = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+
+    const headerIdx = grid.findIndex((row) =>
+      row.some((cell) => String(cell).trim().toLowerCase() === 'nisn')
+    );
+    if (headerIdx === -1) {
+      throw new Error('Kolom "NISN" tidak ditemukan di file. Pastikan baris header berisi kolom NISN.');
+    }
+
+    const header = grid[headerIdx].map((cell) => String(cell).trim().toLowerCase());
+    const idCol = header.indexOf('nisn');
+    const nameCol = header.findIndex((h) => h.includes('nama'));
+    const classCol = header.findIndex((h) => h.includes('kelas'));
+
+    if (nameCol === -1) {
+      throw new Error('Kolom "Nama Lengkap" tidak ditemukan di file. Pastikan baris header berisi kolom Nama.');
+    }
+
+    const rowsMap = new Map();
+    for (let i = headerIdx + 1; i < grid.length; i++) {
+      const row = grid[i];
+      const idValue = String(row[idCol] ?? '').trim();
+      const nameValue = String(row[nameCol] ?? '').trim();
+
+      if (!idValue || !nameValue || idValue.toLowerCase() === 'nisn') continue;
+
+      rowsMap.set(idValue, {
+        identifier: idValue,
+        name: nameValue,
+        class: classCol !== -1 ? String(row[classCol] ?? '').trim() || null : null,
+      });
+    }
+
+    return [...rowsMap.values()];
+  };
+
   const handleImport = async (e) => {
     e.preventDefault();
     if (!importFile) return;
@@ -164,12 +209,15 @@ export default function DashboardVoters() {
     resetMessages();
     setIsLoading(true);
 
-    const formData = new FormData();
-    formData.append('file', importFile);
-
     try {
-      const res = await apiClient.post('/admin/voters/import', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const rows = await parseImportFile(importFile);
+      if (rows.length === 0) {
+        throw new Error('Tidak ada baris data valid ditemukan di file.');
+      }
+
+      const res = await apiClient.post('/admin/voters/import', {
+        role: importRole,
+        rows,
       });
 
       if (res.data.status === 'success') {
@@ -181,19 +229,22 @@ export default function DashboardVoters() {
         fetchClasses();
       }
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || 'Gagal mengimpor file CSV');
+      const message = err.response?.data?.message
+        || Object.values(err.response?.data?.errors || {})[0]?.[0]
+        || err.message
+        || 'Gagal mengimpor file';
+      setErrorMessage(message);
     } finally {
       setIsLoading(false);
     }
   };
 
   const downloadCSVTemplate = () => {
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + "identifier;name;role;class;password\n"
-      + "2223101;Ahmad Fauzi;SISWA;10 PPLG 1;optionalPassword\n"
-      + "2223102;Budi Santoso;SISWA;10 PPLG 2;\n"
-      + "19920811;Dian Pratiwi S.Kom;GURU_STAF;GURU;123456";
-      
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + "NO;NISN;Nama Lengkap;Kelas Terakhir\n"
+      + "1;0067891234;Ahmad Fauzi;10 PPLG 1\n"
+      + "2;0067891235;Budi Santoso;10 PPLG 2";
+
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -384,10 +435,10 @@ export default function DashboardVoters() {
             </form>
           </div>
 
-          {/* Import CSV */}
+          {/* Import Massal Excel */}
           <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-xs">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base font-extrabold text-slate-900">Import Massal Excel (CSV)</h3>
+              <h3 className="text-base font-extrabold text-slate-900">Import Massal Excel</h3>
               <button
                 type="button"
                 onClick={downloadCSVTemplate}
@@ -398,20 +449,43 @@ export default function DashboardVoters() {
             </div>
 
             <p className="text-[11px] text-slate-500 mb-4 leading-relaxed font-medium">
-              Unggah file CSV dengan pemisah titik-koma (;) atau koma (,) yang berisi kolom: <b>identifier, name, role, class, password</b>. Kolom password opsional, jika kosong default disamakan dengan ID Pengguna.
+              Unggah file <b>Excel (.xlsx/.xls)</b> atau CSV berisi kolom: <b>NO, NISN, Nama Lengkap, Kelas Terakhir</b>. Sistem otomatis membaca kolom <b>NISN</b> sebagai ID Pengguna &amp; <b>Nama Lengkap</b> sebagai Nama. Password bawaan = NISN.
             </p>
 
             <form onSubmit={handleImport} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">Role Pemilih (untuk semua baris)</label>
+                <select
+                  value={importRole}
+                  onChange={(e) => setImportRole(e.target.value)}
+                  className="w-full rounded-xl px-3 py-2.5 text-sm bg-slate-50 border border-slate-200 text-slate-800 font-medium focus:outline-none focus:border-blue-500"
+                >
+                  <option value="SISWA">Siswa</option>
+                  <option value="GURU_STAF">Guru / Staf</option>
+                </select>
+              </div>
+
               <div>
                 <input
                   id="csv-upload"
                   type="file"
                   required
-                  accept=".csv,.txt"
+                  accept=".xlsx,.xls,.csv,.txt"
                   onChange={(e) => setImportFile(e.target.files?.[0] || null)}
                   className="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-50 file:text-blue-600 file:cursor-pointer hover:file:bg-blue-100"
                 />
               </div>
+
+              {errorMessage && (
+                <div className="text-xs text-red-600 font-semibold bg-red-50 border border-red-100 p-2.5 rounded-xl">
+                  ⚠️ {errorMessage}
+                </div>
+              )}
+              {successMessage && (
+                <div className="text-xs text-emerald-700 font-semibold bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl">
+                  ✓ {successMessage}
+                </div>
+              )}
 
               <button
                 type="submit"

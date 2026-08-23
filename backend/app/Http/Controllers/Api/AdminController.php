@@ -10,6 +10,7 @@ use App\Models\Voter;
 use App\Models\VotingSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
@@ -573,97 +574,76 @@ class AdminController extends Controller
     public function importVoters(Request $request): JsonResponse
     {
         $request->validate([
-            'file' => 'required|file|mimes:csv,txt',
+            'role'              => ['required', 'in:SISWA,GURU_STAF'],
+            'rows'              => ['required', 'array', 'min:1'],
+            'rows.*.identifier' => ['required', 'string', 'max:255'],
+            'rows.*.name'       => ['required', 'string', 'max:255'],
+            'rows.*.class'      => ['nullable', 'string', 'max:255'],
         ]);
 
-        $file = $request->file('file');
-        $filePath = $file->getRealPath();
+        // Import ribuan baris butuh waktu (hashing bcrypt per baris), bebas dari batas 30 detik
+        set_time_limit(0);
 
-        $handle = fopen($filePath, 'r');
-        if (!$handle) {
-            return response()->json(['status' => 'error', 'message' => 'Gagal membuka file CSV.'], 400);
-        }
+        $defaultRole = $request->input('role');
 
-        // Baca header
-        $header = fgetcsv($handle, 1000, ';'); // dukung separator semicolon/koma
-        if (!$header || count($header) < 2) {
-            // Coba dengan separator koma
-            rewind($handle);
-            $header = fgetcsv($handle, 1000, ',');
-            $separator = ',';
-        } else {
-            $separator = ';';
-        }
+        $rows = collect($request->input('rows'))
+            ->map(function ($row) use ($defaultRole) {
+                $identifier = trim((string) $row['identifier']);
+                $name = trim((string) $row['name']);
+                $class = isset($row['class']) && trim((string) $row['class']) !== ''
+                    ? trim((string) $row['class'])
+                    : null;
 
-        if (!$header) {
-            fclose($handle);
-            return response()->json(['status' => 'error', 'message' => 'Format file CSV tidak valid.'], 400);
-        }
-
-        // Bersihkan header
-        $header = array_map(function ($h) {
-            return trim(strtolower($h));
-        }, $header);
-
-        $identifierIdx = array_search('identifier', $header);
-        $nameIdx = array_search('name', $header);
-        $roleIdx = array_search('role', $header);
-        $classIdx = array_search('class', $header);
-        $passwordIdx = array_search('password', $header);
-
-        if ($identifierIdx === false || $nameIdx === false || $roleIdx === false) {
-            fclose($handle);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Format CSV salah. Harus terdapat kolom: identifier, name, dan role.'
-            ], 400);
-        }
-
-        $imported = 0;
-        $updated = 0;
-
-        while (($row = fgetcsv($handle, 1000, $separator)) !== false) {
-            if (empty(array_filter($row))) continue;
-
-            $identifier = trim($row[$identifierIdx] ?? '');
-            $name = trim($row[$nameIdx] ?? '');
-            $roleRaw = trim($row[$roleIdx] ?? '');
-            $role = strtoupper($roleRaw);
-            $class = ($classIdx !== false && isset($row[$classIdx])) ? trim($row[$classIdx]) : null;
-            $passwordRaw = ($passwordIdx !== false && isset($row[$passwordIdx])) ? trim($row[$passwordIdx]) : '';
-
-            if (empty($identifier) || empty($name) || empty($role)) {
-                continue;
-            }
-
-            if (!in_array($role, ['SISWA', 'GURU_STAF', 'MITRA'])) {
-                $role = 'SISWA';
-            }
-
-            $voter = Voter::where('identifier', $identifier)->first();
-            $password = empty($passwordRaw) ? $identifier : $passwordRaw;
-
-            if ($voter) {
-                $voter->update([
-                    'name'     => $name,
-                    'role'     => $role,
-                    'class'    => $class,
-                    'password' => Hash::make($password),
-                ]);
-                $updated++;
-            } else {
-                Voter::create([
+                return [
                     'identifier' => $identifier,
                     'name'       => $name,
-                    'role'       => $role,
+                    'role'       => $defaultRole,
                     'class'      => $class,
-                    'password'   => Hash::make($password),
-                ]);
-                $imported++;
-            }
+                    'password'   => Hash::make($identifier), // Password bawaan = NISN
+                ];
+            })
+            ->filter(fn ($row) => $row['identifier'] !== '' && $row['name'] !== '')
+            ->unique('identifier')
+            ->values();
+
+        if ($rows->isEmpty()) {
+            return response()->json(['status' => 'error', 'message' => 'Tidak ada baris data valid ditemukan di file.'], 400);
         }
 
-        fclose($handle);
+        DB::beginTransaction();
+
+        try {
+            // Satu query untuk mengetahui identifier yang sudah terdaftar
+            $existingIdentifiers = Voter::whereIn('identifier', $rows->pluck('identifier'))
+                ->pluck('identifier')
+                ->all();
+
+            $timestamp = now();
+            $records = $rows
+                ->map(fn ($row) => $row + ['created_at' => $timestamp, 'updated_at' => $timestamp])
+                ->chunk(500);
+
+            // Batch upsert: insert baru & update yang sudah ada dalam satu query per chunk
+            foreach ($records as $chunk) {
+                Voter::upsert(
+                    $chunk->all(),
+                    ['identifier'],
+                    ['name', 'role', 'class', 'password', 'updated_at']
+                );
+            }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => 'error',
+                'message' => 'Gagal mengimpor data: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        $updated = count($existingIdentifiers);
+        $imported = $rows->count() - $updated;
 
         return response()->json([
             'status'  => 'success',
