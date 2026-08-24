@@ -97,8 +97,8 @@ export default function DashboardSession() {
       </div>
 
       {/* Search Bar */}
-      <div className="flex justify-between items-center gap-4">
-        <div className="w-full max-w-md">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div className="w-full sm:max-w-md">
           <input
             type="text"
             value={searchQuery}
@@ -108,7 +108,7 @@ export default function DashboardSession() {
           />
         </div>
 
-        <div className="text-xs text-slate-500 font-medium">
+        <div className="text-xs text-slate-500 font-medium shrink-0">
           Total Bilik: <span className="font-extrabold text-slate-800">{filteredSessions.length}</span>
         </div>
       </div>

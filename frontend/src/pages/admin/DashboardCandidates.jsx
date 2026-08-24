@@ -173,12 +173,12 @@ export default function DashboardCandidates() {
         </div>
 
         {/* Dropdown Pilih Sesi */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <label className="text-xs font-bold text-slate-600 shrink-0">Pilih Sesi Pemilu:</label>
           <select
             value={selectedSessionId}
             onChange={(e) => setSelectedSessionId(e.target.value)}
-            className="bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium px-4 py-2 focus:outline-none focus:border-blue-500 shadow-xs"
+            className="flex-1 min-w-0 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 font-medium px-4 py-2 focus:outline-none focus:border-blue-500 shadow-xs"
             disabled={isFetchingSessions}
           >
             {isFetchingSessions && <option>Memuat sesi...</option>}

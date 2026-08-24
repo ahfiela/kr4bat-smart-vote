@@ -42,7 +42,7 @@ export default function DashboardHistory() {
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800">
-      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             History &amp; Riwayat Pemilu
@@ -52,7 +52,7 @@ export default function DashboardHistory() {
           </p>
         </div>
 
-        <div className="text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-1.5 rounded-full border border-amber-200">
+        <div className="text-xs font-bold text-amber-700 bg-amber-50 px-3.5 py-1.5 rounded-full border border-amber-200 self-start sm:self-auto shrink-0">
           🔒 Status Read-Only
         </div>
       </div>

@@ -193,13 +193,13 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
 
         {/* Action Bar - Clean White Header */}
-        <div className="bg-white text-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-200 shadow-xs shrink-0">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="bg-blue-600 text-white font-black text-[10px] px-2.5 py-1 rounded-lg">
+        <div className="bg-white text-slate-900 px-4 sm:px-6 py-4 flex justify-between items-center gap-3 border-b border-slate-200 shadow-xs shrink-0">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="bg-blue-600 text-white font-black text-[10px] px-2.5 py-1 rounded-lg shrink-0">
                 TAHAP {step} DARI 3
               </span>
-              <h2 className="font-extrabold text-slate-900 text-base tracking-tight">
+              <h2 className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight truncate">
                 {step === 1 && 'Identitas & Scope Kategori Sesi (Level 1)'}
                 {step === 2 && 'Input Pasangan Calon (Paslon)'}
                 {step === 3 && 'Aktivasi Room Sesi Pemilihan'}
@@ -213,7 +213,7 @@ export default function RoomWizardModal({ isOpen, onClose, onSuccess }) {
           <button
             type="button"
             onClick={handleClose}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer text-sm font-bold"
+            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer text-sm font-bold shrink-0"
           >
             ✕
           </button>

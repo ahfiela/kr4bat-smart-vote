@@ -92,7 +92,7 @@ export default function DashboardSchoolClasses() {
 
   return (
     <div className="space-y-8 animate-fade-in text-slate-800">
-      <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+      <div className="border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
             Manajemen Data Kelas

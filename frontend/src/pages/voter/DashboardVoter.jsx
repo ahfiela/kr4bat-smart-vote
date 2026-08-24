@@ -420,10 +420,10 @@ export default function DashboardVoter() {
         {viewingProfileCandidate && (
           <div className="w-full space-y-6 animate-fade-in max-w-4xl mx-auto">
             {/* Top Navigation Back Link */}
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <button
                 onClick={() => setViewingProfileCandidate(null)}
-                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors"
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer transition-colors self-start"
               >
                 <span>← Kembali</span>
               </button>
@@ -432,7 +432,7 @@ export default function DashboardVoter() {
                 Profil Kandidat {viewingProfileCandidate.candidate_number}
               </h2>
 
-              <div className="w-12"></div>
+              <div className="hidden sm:block w-12"></div>
             </div>
 
             {/* Candidate Detail Cards Layout */}

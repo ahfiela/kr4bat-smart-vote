@@ -202,48 +202,50 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
   return (
     <div className="space-y-6 animate-fade-in text-slate-800">
       {/* Top Header Navigation */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200 text-slate-900 flex justify-between items-center flex-wrap gap-4 shadow-xs">
-        <div>
-          <button
-            onClick={onBack}
-            className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1.5 cursor-pointer"
-          >
-            ← Kembali ke Daftar Bilik
-          </button>
-          <h2 className="text-xl md:text-2xl font-black text-slate-900 flex items-center gap-2">
-            <span>Monitor Internal: {sessionDetail.name}</span>
-            <span className={`text-xs px-3 py-0.5 rounded-full font-extrabold border ${
-              sessionDetail.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-              sessionDetail.status === 'ARCHIVED' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-              'bg-slate-100 text-slate-600 border-slate-200'
-            }`}>
-              {sessionDetail.status}
-            </span>
-          </h2>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Kode Room: <span className="font-mono font-bold text-blue-600">{sessionDetail.room_code}</span> • Tahun: {sessionDetail.year}
-          </p>
-        </div>
-
-        {/* Action-Based Control Buttons */}
-        <div className="flex items-center gap-3">
-          {sessionDetail.status !== 'ACTIVE' && (
+      <div className="bg-white p-4 md:p-6 rounded-3xl border border-slate-200 text-slate-900 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+          <div className="min-w-0">
             <button
-              onClick={handleStartSession}
-              className="px-5 py-2.5 rounded-xl font-extrabold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              onClick={onBack}
+              className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 mb-1.5 cursor-pointer"
             >
-              <span>▶ Mulai Sesi</span>
+              ← Kembali ke Daftar Bilik
             </button>
-          )}
+            <h2 className="text-lg md:text-2xl font-black text-slate-900 flex flex-wrap items-center gap-2">
+              <span className="truncate">Monitor Internal: {sessionDetail.name}</span>
+              <span className={`text-xs px-3 py-0.5 rounded-full font-extrabold border shrink-0 ${
+                sessionDetail.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                sessionDetail.status === 'ARCHIVED' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                {sessionDetail.status}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">
+              Kode Room: <span className="font-mono font-bold text-blue-600">{sessionDetail.room_code}</span> • Tahun: {sessionDetail.year}
+            </p>
+          </div>
 
-          {sessionDetail.status === 'ACTIVE' && (
-            <button
-              onClick={handleEndSession}
-              className="px-5 py-2.5 rounded-xl font-extrabold text-xs bg-red-600 hover:bg-red-700 text-white shadow-md transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <span>⏹ Akhiri Sesi</span>
-            </button>
-          )}
+          {/* Action-Based Control Buttons */}
+          <div className="flex items-center gap-3 shrink-0">
+            {sessionDetail.status !== 'ACTIVE' && (
+              <button
+                onClick={handleStartSession}
+                className="px-4 py-2.5 rounded-xl font-extrabold text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>▶ Mulai Sesi</span>
+              </button>
+            )}
+
+            {sessionDetail.status === 'ACTIVE' && (
+              <button
+                onClick={handleEndSession}
+                className="px-4 py-2.5 rounded-xl font-extrabold text-xs bg-red-600 hover:bg-red-700 text-white shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>⏹ Akhiri Sesi</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
