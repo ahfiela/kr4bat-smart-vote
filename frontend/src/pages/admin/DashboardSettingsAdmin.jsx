@@ -180,7 +180,7 @@ export default function DashboardSettingsAdmin() {
         <div>
           <h3 className="text-base font-extrabold text-slate-900">Aplikasi — Data Settings</h3>
           <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Daftar seluruh key-value pengaturan aplikasi. Kosongkan value untuk menonaktifkan filter terkait.
+            Daftar seluruh key-value pengaturan aplikasi. Kosongkan value untuk menonaktifkan filter terkait. Untuk filter kelas Masuk Cepat, bisa beberapa kelas sekaligus — pisahkan dengan koma (contoh: <span className="font-mono">XII PPLG 2, XII TJKT 2</span>).
           </p>
         </div>
 

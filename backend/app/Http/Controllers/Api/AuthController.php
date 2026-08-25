@@ -94,19 +94,28 @@ class AuthController extends Controller
         }
 
         // Filter opsional dari settings: jika key "display_voter_masuk_cepat"
-        // ada & bernilai, tampilkan hanya siswa kelas tsb. Kosong = semua.
-        $filterClass = null;
+        // ada & bernilai, tampilkan hanya siswa kelas tsb (bisa multi kelas,
+        // dipisah koma, misal: "XII PPLG 2, XII TJKT 2"). Kosong = semua.
+        $filterClasses = null;
         if ($role === 'SISWA') {
             $raw = Setting::where('key', 'display_voter_masuk_cepat')->value('value');
-            $filterClass = $raw !== null ? trim($raw) : null;
-            if ($filterClass === '') {
-                $filterClass = null;
+            if ($raw !== null) {
+                $classes = collect(explode(',', $raw))
+                    ->map(fn ($c) => trim($c))
+                    ->filter(fn ($c) => $c !== '')
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (!empty($classes)) {
+                    $filterClasses = $classes;
+                }
             }
         }
 
         $query = Voter::where('role', $role)->orderBy('name');
-        if ($filterClass) {
-            $query->where('class', $filterClass);
+        if ($filterClasses) {
+            $query->whereIn('class', $filterClasses);
         }
 
         $voters = $query
@@ -117,7 +126,7 @@ class AuthController extends Controller
         return response()->json([
             'status'       => 'success',
             'data'         => $voters,
-            'filter_class' => $filterClass,
+            'filter_class' => $filterClasses,
         ]);
     }
 

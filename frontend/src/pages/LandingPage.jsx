@@ -205,10 +205,10 @@ function LandingPage() {
 
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-600 tracking-wide mb-1.5">NISN / NIP / ID PENGGUNA</label>
-                {quickFilterClass && (
+                {quickFilterClass && quickFilterClass.length > 0 && (
                   <p className="mb-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1">
                     <ion-icon name="funnel" style={{ fontSize: '10px', verticalAlign: '-1px' }}></ion-icon>{' '}
-                    Filter aktif: hanya siswa kelas {quickFilterClass}
+                    Filter aktif: hanya siswa kelas {quickFilterClass.join(', ')}
                   </p>
                 )}
                 <input
