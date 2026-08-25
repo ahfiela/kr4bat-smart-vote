@@ -166,7 +166,7 @@ export default function DashboardLayout() {
       {/* Desktop Main Layout Wrapper */}
       <div className="relative z-10 flex min-h-[calc(100vh-53px)] lg:min-h-screen">
         {/* Sidebar - Desktop (always visible, sticky) */}
-        <aside className="hidden lg:flex w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col justify-between p-6 shrink-0 shadow-xs sticky top-0 h-screen overflow-y-auto">
+        <aside className="hidden lg:flex w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col justify-between p-6 shrink-0 shadow-xs min-h-screen">
           <SidebarNav />
         </aside>
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
 import RoomWizardModal from './RoomWizardModal';
 import RoomMonitorPanel from './RoomMonitorPanel';
+import EditSessionModal from './EditSessionModal';
 
 export default function DashboardSession() {
   const [sessions, setSessions] = useState([]);
@@ -13,6 +14,9 @@ export default function DashboardSession() {
 
   // Wizard Modal state
   const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+  // Edit Session Modal state
+  const [editingSession, setEditingSession] = useState(null);
 
   const fetchSessions = async () => {
     setIsFetching(true);
@@ -146,13 +150,26 @@ export default function DashboardSession() {
                     </h3>
                   </div>
 
-                  <button
-                    onClick={(e) => handleDeleteSession(e, session.id)}
-                    className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition-all text-xs cursor-pointer opacity-0 group-hover:opacity-100"
-                    title="Hapus Sesi"
-                  >
-                    <ion-icon name="trash-outline"></ion-icon>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingSession(session);
+                      }}
+                      className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 transition-all text-xs cursor-pointer opacity-0 group-hover:opacity-100"
+                      title="Edit Sesi"
+                    >
+                      <ion-icon name="create-outline"></ion-icon>
+                    </button>
+
+                    <button
+                      onClick={(e) => handleDeleteSession(e, session.id)}
+                      className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 border border-red-100 transition-all text-xs cursor-pointer opacity-0 group-hover:opacity-100"
+                      title="Hapus Sesi"
+                    >
+                      <ion-icon name="trash-outline"></ion-icon>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-100 space-y-1.5 text-xs text-slate-600">
@@ -205,6 +222,16 @@ export default function DashboardSession() {
         onSuccess={() => {
           fetchSessions();
         }}
+      />
+
+      {/* Edit Session Modal */}
+      <EditSessionModal
+        isOpen={!!editingSession}
+        onClose={() => setEditingSession(null)}
+        onSuccess={() => {
+          fetchSessions();
+        }}
+        session={editingSession}
       />
     </div>
   );

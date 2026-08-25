@@ -30,14 +30,16 @@ export default function DashboardVoter() {
   const fetchData = async () => {
     setIsFetching(true);
     try {
-      // 1. Fetch available sessions
-      const resSessions = await apiClient.get('/voter/sessions');
+      // Parallel fetch: sessions & history bersamaan agar lebih cepat tampil
+      const [resSessions, resHistory] = await Promise.all([
+        apiClient.get('/voter/sessions'),
+        apiClient.get('/voter/history'),
+      ]);
+
       if (resSessions.data.status === 'success') {
         setAvailableSessions(resSessions.data.data);
       }
 
-      // 2. Fetch history to know which sessions voter already voted in
-      const resHistory = await apiClient.get('/voter/history');
       if (resHistory.data.status === 'success') {
         const ids = resHistory.data.data.map((h) => h.voting_session_id);
         setVotedSessionIds(ids);
@@ -91,6 +93,7 @@ export default function DashboardVoter() {
 
       if (res.data.status === 'success') {
         setActiveBooth(res.data.data);
+        console.log(res.data.data)
         setVerificationSession(null);
         setTokenInput('');
       }
@@ -145,6 +148,8 @@ export default function DashboardVoter() {
       .filter((line) => line.length > 0);
   };
 
+  const votedCount = availableSessions.filter((s) => votedSessionIds.includes(s.id)).length;
+
   return (
     <div className="relative min-h-screen bg-[#f8fafc] font-sans text-slate-800 flex flex-col justify-between overflow-x-hidden selection:bg-blue-600 selection:text-white">
       {/* Header Bar */}
@@ -179,55 +184,168 @@ export default function DashboardVoter() {
             SCREEN 1: SELECT ELECTION SESSION (Pilih Sesi Pemilihan)
             ---------------------------------------------------- */}
         {!activeBooth && !viewingProfileCandidate && (
-          <div className="w-full max-w-xl text-center space-y-8">
-            <div className="space-y-2">
+          <div className="w-full max-w-3xl space-y-8">
+            <div className="text-center space-y-2">
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                 Pilih Sesi Pemilihan
               </h1>
               <p className="text-xs md:text-sm text-slate-500 font-medium max-w-md mx-auto leading-relaxed">
                 Silahkan pilih sesi pemilihan. Anda mungkin akan diminta memasukkan token untuk memasuki sesi pemilihan.
               </p>
+
+              {!isFetching && availableSessions.length > 0 && (
+                <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-400 pt-1">
+                  <span className="text-emerald-600">{votedCount}</span>
+                  <span>dari</span>
+                  <span className="text-slate-600">{availableSessions.length}</span>
+                  <span>sesi telah Anda ikuti</span>
+                </div>
+              )}
             </div>
 
             {isFetching && (
-              <div className="py-8 text-xs text-slate-400 font-medium">Memuat sesi pemilihan aktif...</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4" role="status" aria-label="Memuat sesi pemilihan">
+                {[0, 1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="w-full rounded-3xl bg-white border border-slate-100 p-5 space-y-4 overflow-hidden"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-slate-100 animate-pulse shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 rounded-md bg-slate-200 animate-pulse" style={{ width: `${70 - i * 8}%`, animationDelay: `${i * 0.15}s` }} />
+                        <div className="h-3 rounded-md bg-slate-100 animate-pulse" style={{ width: '40%', animationDelay: `${i * 0.15}s` }} />
+                      </div>
+                    </div>
+                    <div className="h-3 rounded-md bg-slate-100 animate-pulse w-full" />
+                    <div className="h-9 rounded-xl bg-slate-100 animate-pulse w-full" />
+                  </div>
+                ))}
+              </div>
             )}
 
             {!isFetching && availableSessions.length === 0 && (
-              <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-2 shadow-xs">
-                <div className="text-3xl">🗳️</div>
-                <h3 className="font-bold text-slate-800 text-sm">Tidak Ada Pemilihan Aktif</h3>
-                <p className="text-xs text-slate-500">
-                  Saat ini tidak ada bilik suara aktif yang tersedia untuk kelompok Anda.
+              <div className="bg-white border border-slate-200 rounded-3xl p-10 text-center space-y-2 shadow-xs">
+                <div className="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                  <ion-icon name="file-tray-outline" style={{ fontSize: '22px' }}></ion-icon>
+                </div>
+                <h3 className="font-bold text-slate-800 text-sm">Belum ada pemilihan aktif</h3>
+                <p className="text-xs text-slate-500 max-w-xs mx-auto">
+                  Saat ini tidak ada bilik suara aktif yang tersedia untuk kelompok Anda. Coba periksa lagi nanti.
                 </p>
               </div>
             )}
 
-            {/* List of election session buttons */}
-            <div className="space-y-4">
-              {availableSessions.map((session) => {
-                const hasVoted = votedSessionIds.includes(session.id);
+            {/* Grid of election session ballot cards */}
+            {!isFetching && availableSessions.length > 0 && (
+              <div
+                className={
+                  availableSessions.length === 1
+                    ? 'flex justify-center'
+                    : 'grid grid-cols-1 md:grid-cols-2 gap-4'
+                }
+              >
+                {availableSessions.map((session) => {
+                  const hasVoted = votedSessionIds.includes(session.id);
 
-                return (
-                  <button
-                    key={session.id}
-                    onClick={() => handleSelectSession(session)}
-                    className={`w-full font-bold py-4 px-6 rounded-2xl text-sm md:text-base transition-all duration-200 shadow-xs hover:shadow-md active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2 ${
-                      hasVoted
-                        ? 'bg-white hover:bg-emerald-50/50 border-2 border-emerald-500 text-emerald-600'
-                        : 'bg-white hover:bg-blue-50/50 border-2 border-blue-600/80 hover:border-blue-600 text-blue-600'
-                    }`}
-                  >
-                    {hasVoted && (
-                      <span className="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-xs font-black shrink-0">
-                        ✓
-                      </span>
-                    )}
-                    <span>{session.name}</span>
-                  </button>
-                );
-              })}
-            </div>
+                  return (
+                    <button
+                      key={session.id}
+                      onClick={() => handleSelectSession(session)}
+                      className={`group relative w-full ${
+                        availableSessions.length === 1 ? 'max-w-sm' : ''
+                      } text-left rounded-3xl bg-white border-2 transition-all duration-200 shadow-xs hover:shadow-lg active:scale-[0.99] cursor-pointer overflow-hidden flex flex-col ${
+                        hasVoted
+                          ? 'border-emerald-200 hover:border-emerald-300'
+                          : 'border-slate-100 hover:border-blue-300'
+                      }`}
+                    >
+                      {/* Top status strip */}
+                      <div className={`h-1.5 w-full shrink-0 ${hasVoted ? 'bg-emerald-500' : 'bg-blue-600'}`} />
+
+                      <div className="p-5 flex flex-col items-center gap-4 flex-1 text-center">
+                        {/* Icon */}
+                        <div
+                          className={`shrink-0 w-11 h-11 rounded-2xl flex items-center justify-center ${
+                            hasVoted ? 'bg-emerald-50 text-emerald-600' : 'bg-blue-50 text-blue-600'
+                          }`}
+                        >
+                          <ion-icon
+                            name={hasVoted ? 'checkmark-done' : 'file-tray-full-outline'}
+                            style={{ fontSize: '20px' }}
+                          ></ion-icon>
+                        </div>
+
+                        {/* Title + badges */}
+                        <div className="w-full">
+                          <h3 className="font-extrabold text-slate-900 text-sm md:text-base leading-snug line-clamp-2">
+                            {session.name}
+                          </h3>
+                          <div className="flex flex-wrap items-center justify-center gap-1.5 mt-1.5">
+                            {session.category && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-100">
+                                {session.category.name}
+                              </span>
+                            )}
+                            {session.year && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                {session.year}—{parseInt(session.year) + 1}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        {session.description && (
+                          <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
+                            {session.description}
+                          </p>
+                        )}
+
+                        {/* Active kloter live indicator */}
+                        {session.active_kloter && (
+                          <div className="flex items-center gap-1.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-1.5 w-fit">
+                            <span className="relative flex h-1.5 w-1.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                            </span>
+                            Kloter aktif: {session.active_kloter}
+                          </div>
+                        )}
+
+                        {/* Perforated ticket divider */}
+                        <div className="relative flex items-center w-full mt-auto pt-1">
+                          <span className="absolute -left-5 w-4 h-4 rounded-full bg-[#f8fafc] border border-slate-100" />
+                          <div className="flex-1 border-t-2 border-dashed border-slate-200" />
+                          <span className="absolute -right-5 w-4 h-4 rounded-full bg-[#f8fafc] border border-slate-100" />
+                        </div>
+
+                        {/* Bottom: candidate count + CTA */}
+                        <div className="flex flex-col items-center gap-3 w-full">
+                          {session.candidates?.length > 0 && (
+                            <span className="flex items-center gap-1 text-[10px] md:text-[11px] text-slate-400 font-semibold">
+                              <ion-icon name="people-outline" style={{ fontSize: '12px' }}></ion-icon>
+                              {session.candidates.length} calon
+                            </span>
+                          )}
+
+                          <span
+                            className={`inline-flex items-center gap-1 px-4 py-2 rounded-xl text-[11px] md:text-xs font-bold transition-colors ${
+                              hasVoted
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : 'bg-blue-600 text-white group-hover:bg-blue-700'
+                            }`}
+                          >
+                            {hasVoted ? 'Sudah memilih' : 'Mulai memilih'}
+                            <ion-icon name="chevron-forward" style={{ fontSize: '12px' }}></ion-icon>
+                          </span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -322,9 +440,9 @@ export default function DashboardVoter() {
                     {/* Photo Pair Ketua & Wakil */}
                     <div className="flex gap-2">
                       <div className="flex-1 rounded-xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center relative">
-                        {cand.ketua_photo_path ? (
+                        {cand.photo_path ? (
                           <img
-                            src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${cand.ketua_photo_path}`}
+                            src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${cand.photo_path}`}
                             alt={cand.name}
                             className="w-full h-full object-cover object-top"
                           />
@@ -424,8 +542,8 @@ export default function DashboardVoter() {
                 <div className="flex gap-3">
                   <div className="flex-1 space-y-1">
                     <div className="rounded-2xl overflow-hidden bg-slate-200 aspect-square flex items-center justify-center">
-                      {viewingProfileCandidate.ketua_photo_path ? (
-                        <img src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${viewingProfileCandidate.ketua_photo_path}`} alt={viewingProfileCandidate.name} className="w-full h-full object-cover object-top" />
+                      {viewingProfileCandidate.photo_path ? (
+                        <img src={`${import.meta.env.VITE_API_URL.replace('/api/v1', '')}${viewingProfileCandidate.photo_path}`} alt={viewingProfileCandidate.name} className="w-full h-full object-cover object-top" />
                       ) : (
                         <span className="text-slate-400 text-xs font-bold">No Photo</span>
                       )}

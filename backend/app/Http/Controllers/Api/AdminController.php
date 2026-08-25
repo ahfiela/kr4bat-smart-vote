@@ -195,6 +195,9 @@ class AdminController extends Controller
             'name'             => 'required|string|max:150',
             'year'             => 'required|digits:4',
             'room_code'        => ['required', 'string', 'max:20', Rule::unique('voting_sessions', 'room_code')->ignore($session->id)],
+            'description'      => 'nullable|string',
+            'allowed_roles'    => 'nullable|array',
+            'allowed_roles.*'  => 'string|in:SISWA,GURU_STAF,MITRA',
             'allowed_classes'  => 'nullable|array',
             'allowed_classes.*' => 'string',
         ]);
@@ -203,6 +206,7 @@ class AdminController extends Controller
         if ($session->category_id != $validated['category_id']) {
             if ($session->status === 'ACTIVE' || $session->status === 'DRAFT') {
                 $exists = VotingSession::where('category_id', $validated['category_id'])
+                    ->where('id', '!=', $session->id)
                     ->whereIn('status', ['DRAFT', 'ACTIVE'])
                     ->exists();
                 if ($exists) {
@@ -214,7 +218,17 @@ class AdminController extends Controller
             }
         }
 
-        $session->update($validated);
+        $updateData = $validated;
+
+        // Field opsional: pertahankan nilai lama bila tidak dikirim
+        if (!array_key_exists('description', $validated)) {
+            unset($updateData['description']);
+        }
+        if (!array_key_exists('allowed_roles', $validated)) {
+            unset($updateData['allowed_roles']);
+        }
+
+        $session->update($updateData);
 
         return response()->json([
             'status'  => 'success',
