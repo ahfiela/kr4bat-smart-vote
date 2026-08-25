@@ -49,5 +49,11 @@ class DatabaseSeeder extends Seeder
             'role'     => 'GURU_STAF',
             'class'    => 'GURU',
         ]);
+
+        // Default pengaturan: filter kelas untuk halaman Masuk Cepat
+        \Illuminate\Support\Facades\DB::table('settings')->updateOrInsert(
+            ['key' => 'display_voter_masuk_cepat'],
+            ['value' => 'X PPLG 1', 'created_at' => now(), 'updated_at' => now()]
+        );
     }
 }

@@ -54,6 +54,10 @@ Route::prefix('v1')->group(function () {
             Route::get('/voters/classes', [AdminController::class, 'getVoterClasses']);
 
             Route::put('/profile', [AdminController::class, 'updateProfile']);
+
+            // App Settings (key-value)
+            Route::get('/settings', [AdminController::class, 'getSettings']);
+            Route::put('/settings/{setting}', [AdminController::class, 'updateSetting']);
         });
 
         Route::middleware('ability:role:voter')->prefix('voter')->group(function () {

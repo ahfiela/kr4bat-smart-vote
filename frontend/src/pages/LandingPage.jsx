@@ -22,6 +22,7 @@ function LandingPage() {
   const [quickQuery, setQuickQuery] = useState('')
   const [quickSelected, setQuickSelected] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
+  const [quickFilterClass, setQuickFilterClass] = useState(null)
 
   const isFormValid = userId.trim() !== '' && password.trim() !== ''
 
@@ -32,13 +33,20 @@ function LandingPage() {
     setIsFetchingVoters(true)
     setQuickSelected(null)
     setQuickQuery('')
+    setQuickFilterClass(null)
 
     apiClient.get('/auth/voters/quick', { params: { role: quickRole } })
       .then((res) => {
-        if (active && res.data.status === 'success') setQuickVoters(res.data.data)
+        if (active && res.data.status === 'success') {
+          setQuickVoters(res.data.data)
+          setQuickFilterClass(res.data.filter_class || null)
+        }
       })
       .catch(() => {
-        if (active) setQuickVoters([])
+        if (active) {
+          setQuickVoters([])
+          setQuickFilterClass(null)
+        }
       })
       .finally(() => {
         if (active) setIsFetchingVoters(false)
@@ -88,6 +96,7 @@ function LandingPage() {
     setQuickQuery('')
     setQuickSelected(null)
     setShowDropdown(false)
+    setQuickFilterClass(null)
     setErrorMessage('')
   }
 
@@ -196,6 +205,12 @@ function LandingPage() {
 
               <div className="relative">
                 <label className="block text-xs font-bold text-slate-600 tracking-wide mb-1.5">NISN / NIP / ID PENGGUNA</label>
+                {quickFilterClass && (
+                  <p className="mb-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1">
+                    <ion-icon name="funnel" style={{ fontSize: '10px', verticalAlign: '-1px' }}></ion-icon>{' '}
+                    Filter aktif: hanya siswa kelas {quickFilterClass}
+                  </p>
+                )}
                 <input
                   type="text"
                   required

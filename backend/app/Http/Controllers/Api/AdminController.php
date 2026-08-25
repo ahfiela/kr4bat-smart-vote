@@ -599,6 +599,32 @@ class AdminController extends Controller
         return response()->json(['status' => 'success', 'message' => 'Paslon kandidat berhasil dihapus']);
     }
 
+    // === App Settings (tabel settings) ===
+
+    public function getSettings(): JsonResponse
+    {
+        $settings = Setting::orderBy('key')->get(['id', 'key', 'value']);
+
+        return response()->json(['status' => 'success', 'data' => $settings]);
+    }
+
+    public function updateSetting(Request $request, Setting $setting): JsonResponse
+    {
+        $validated = $request->validate([
+            'value' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $setting->update([
+            'value' => array_key_exists('value', $validated) ? $validated['value'] : null,
+        ]);
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Setting \"{$setting->key}\" berhasil diperbarui",
+            'data'    => $setting,
+        ]);
+    }
+
     // === Pemilih (Voters) ===
 
     public function getVoters(Request $request): JsonResponse

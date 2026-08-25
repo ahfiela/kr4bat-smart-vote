@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Voter;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -92,13 +93,32 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Role tidak valid.'], 422);
         }
 
-        $voters = Voter::where('role', $role)
-            ->orderBy('name')
+        // Filter opsional dari settings: jika key "display_voter_masuk_cepat"
+        // ada & bernilai, tampilkan hanya siswa kelas tsb. Kosong = semua.
+        $filterClass = null;
+        if ($role === 'SISWA') {
+            $raw = Setting::where('key', 'display_voter_masuk_cepat')->value('value');
+            $filterClass = $raw !== null ? trim($raw) : null;
+            if ($filterClass === '') {
+                $filterClass = null;
+            }
+        }
+
+        $query = Voter::where('role', $role)->orderBy('name');
+        if ($filterClass) {
+            $query->where('class', $filterClass);
+        }
+
+        $voters = $query
             ->get(['identifier', 'name', 'class'])
             ->map(fn ($v) => ['id' => $v->identifier, 'name' => $v->name, 'class' => $v->class])
             ->values();
 
-        return response()->json(['status' => 'success', 'data' => $voters]);
+        return response()->json([
+            'status'       => 'success',
+            'data'         => $voters,
+            'filter_class' => $filterClass,
+        ]);
     }
 
     private function loginResponse(string $message, array $data): JsonResponse

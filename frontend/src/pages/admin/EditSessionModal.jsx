@@ -217,7 +217,6 @@ export default function EditSessionModal({ isOpen, onClose, onSuccess, session }
     if (wakilExperience) formData.append('wakil_experience', wakilExperience);
     if (ketuaPhoto) formData.append('ketua_photo', ketuaPhoto);
     if (wakilPhoto) formData.append('wakil_photo', wakilPhoto);
-    formData.append('_method', 'PUT');
 
     try {
       const res = await apiClient.post(`/admin/candidates/${editingCandidateId}`, formData, {
