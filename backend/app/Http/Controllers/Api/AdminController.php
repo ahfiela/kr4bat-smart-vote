@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Candidate;
 use App\Models\SchoolClass;
+use App\Models\Setting;
 use App\Models\Voter;
 use App\Models\VoterHistory;
 use App\Models\VotingSession;
