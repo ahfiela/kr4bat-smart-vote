@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../api/client';
@@ -26,19 +26,6 @@ export default function DashboardVoter() {
   const [showVoteSuccessModal, setShowVoteSuccessModal] = useState(false);
   const [lastVotedSessionName, setLastVotedSessionName] = useState('');
   const [alreadyVotedModalSession, setAlreadyVotedModalSession] = useState(null);
-
-  // Tiles pattern for light theme background
-  const cols = 28;
-  const rows = 14;
-  const totalTiles = cols * rows;
-
-  const tiles = useMemo(() => {
-    return Array.from({ length: totalTiles }).map((_, index) => {
-      const c = index % cols;
-      const scanDelay = (c % 10) * 0.2;
-      return { id: index, delay: scanDelay };
-    });
-  }, [totalTiles]);
 
   const fetchData = async () => {
     setIsFetching(true);
@@ -160,21 +147,8 @@ export default function DashboardVoter() {
 
   return (
     <div className="relative min-h-screen bg-[#f8fafc] font-sans text-slate-800 flex flex-col justify-between overflow-x-hidden selection:bg-blue-600 selection:text-white">
-      {/* Background Soft Rounded Tile Pattern */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-40 z-0">
-        <div className="grid grid-cols-12 md:grid-cols-28 gap-2.5 p-4 max-w-7xl mx-auto">
-          {tiles.map((tile) => (
-            <div
-              key={tile.id}
-              className="aspect-square bg-slate-200/40 rounded-lg animate-pulse"
-              style={{ animationDuration: '4s', animationDelay: `${tile.delay}s` }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Header Bar */}
-      <header className="relative z-10 w-full px-6 py-4 flex justify-between items-center bg-white/70 backdrop-blur-md border-b border-slate-200/60 shadow-xs">
+      <header className="relative z-10 w-full px-6 py-4 flex justify-between items-center bg-white border-b border-slate-200/60 shadow-xs">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-blue-600 text-white font-black flex items-center justify-center text-xs shadow-sm">
             V4
@@ -205,7 +179,7 @@ export default function DashboardVoter() {
             SCREEN 1: SELECT ELECTION SESSION (Pilih Sesi Pemilihan)
             ---------------------------------------------------- */}
         {!activeBooth && !viewingProfileCandidate && (
-          <div className="w-full max-w-xl text-center space-y-8 animate-fade-in">
+          <div className="w-full max-w-xl text-center space-y-8">
             <div className="space-y-2">
               <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
                 Pilih Sesi Pemilihan
@@ -261,7 +235,7 @@ export default function DashboardVoter() {
             SCREEN 2: TOKEN MODAL (Masukkan Token)
             ---------------------------------------------------- */}
         {verificationSession && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-7 max-w-sm w-full space-y-5 text-center shadow-2xl border border-slate-100">
               <div className="space-y-1">
                 <h3 className="text-xl font-extrabold text-slate-900">Masukkan Token</h3>
@@ -319,7 +293,7 @@ export default function DashboardVoter() {
             SCREEN 3: CANDIDATE SELECTION GRID (Daftar Calon...)
             ---------------------------------------------------- */}
         {activeBooth && !viewingProfileCandidate && (
-          <div className="w-full space-y-8 animate-fade-in">
+          <div className="w-full space-y-8">
             <div className="text-center space-y-3">
               <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
                 {activeBooth.session.name}
@@ -418,7 +392,7 @@ export default function DashboardVoter() {
             SCREEN 4: CANDIDATE PROFILE VIEW (Profil Kandidat)
             ---------------------------------------------------- */}
         {viewingProfileCandidate && (
-          <div className="w-full space-y-6 animate-fade-in max-w-4xl mx-auto">
+          <div className="w-full space-y-6 max-w-4xl mx-auto">
             {/* Top Navigation Back Link */}
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
               <button
@@ -525,7 +499,7 @@ export default function DashboardVoter() {
             SCREEN 5: CONFIRMATION MODAL (Konfirmasi Pilihan)
             ---------------------------------------------------- */}
         {selectingCandidate && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-7 max-w-sm w-full space-y-5 text-center shadow-2xl border border-slate-100">
               <div className="space-y-1">
                 <h3 className="text-xl font-extrabold text-slate-900">Konfirmasi Pilihan</h3>
@@ -567,7 +541,7 @@ export default function DashboardVoter() {
             Matches screenshot 1 from recent upload
             ---------------------------------------------------- */}
         {showVoteSuccessModal && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-7 max-w-sm w-full space-y-5 text-center shadow-2xl border border-slate-100">
               {/* Green Checkmark Icon */}
               <div className="w-14 h-14 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-2xl font-black mx-auto shadow-md shadow-emerald-500/20">
@@ -607,7 +581,7 @@ export default function DashboardVoter() {
             Matches screenshot 3 from recent upload
             ---------------------------------------------------- */}
         {alreadyVotedModalSession && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl p-7 max-w-sm w-full space-y-5 text-center shadow-2xl border border-slate-100">
               {/* Blue Checkmark Icon Box */}
               <div className="w-12 h-12 rounded-xl bg-blue-600 text-white flex items-center justify-center text-xl font-black mx-auto shadow-md">
@@ -647,12 +621,6 @@ export default function DashboardVoter() {
 
       <style>{`
         .font-sans { font-family: 'Inter', sans-serif !important; }
-
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(0.98); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fade-in { animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       `}</style>
     </div>
   );

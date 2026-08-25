@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -25,19 +25,6 @@ export default function DashboardLayout() {
     }
     return () => { document.body.style.overflow = ''; };
   }, [isSidebarOpen]);
-
-  // Tiles pattern for light theme background (matches Voter Portal style)
-  const cols = 28;
-  const rows = 14;
-  const totalTiles = cols * rows;
-
-  const tiles = useMemo(() => {
-    return Array.from({ length: totalTiles }).map((_, index) => {
-      const c = index % cols;
-      const scanDelay = (c % 10) * 0.2;
-      return { id: index, delay: scanDelay };
-    });
-  }, [totalTiles]);
 
   const handleLogout = () => {
     logout();
@@ -103,7 +90,7 @@ export default function DashboardLayout() {
           <div className="truncate min-w-0">
             <p className="text-xs font-bold text-slate-800 truncate">{adminName}</p>
             <p className="text-[10px] text-emerald-600 flex items-center gap-1 font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Administrator
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Administrator
             </p>
           </div>
         </div>
@@ -121,21 +108,8 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 font-sans relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
-      {/* Background Soft Tile Pattern */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30 z-0">
-        <div className="grid grid-cols-12 md:grid-cols-28 gap-2.5 p-4 max-w-7xl mx-auto">
-          {tiles.map((tile) => (
-            <div
-              key={tile.id}
-              className="aspect-square bg-slate-200/50 rounded-lg animate-pulse"
-              style={{ animationDuration: '4s', animationDelay: `${tile.delay}s` }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Mobile Top Navbar (z-20) */}
-      <header className="lg:hidden sticky top-0 z-20 w-full px-4 py-3 flex items-center justify-between bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+      <header className="lg:hidden sticky top-0 z-20 w-full px-4 py-3 flex items-center justify-between bg-white border-b border-slate-200/80 shadow-xs">
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer"
@@ -192,7 +166,7 @@ export default function DashboardLayout() {
       {/* Desktop Main Layout Wrapper */}
       <div className="relative z-10 flex min-h-[calc(100vh-53px)] lg:min-h-screen">
         {/* Sidebar - Desktop (always visible, sticky) */}
-        <aside className="hidden lg:flex w-64 xl:w-72 bg-white/80 backdrop-blur-md border-r border-slate-200/80 flex-col justify-between p-6 shrink-0 shadow-xs sticky top-0 h-screen overflow-y-auto">
+        <aside className="hidden lg:flex w-64 xl:w-72 bg-white border-r border-slate-200/80 flex-col justify-between p-6 shrink-0 shadow-xs sticky top-0 h-screen overflow-y-auto">
           <SidebarNav />
         </aside>
 

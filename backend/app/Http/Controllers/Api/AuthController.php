@@ -84,6 +84,23 @@ class AuthController extends Controller
         ]);
     }
 
+    public function quickLoginVoters(Request $request): JsonResponse
+    {
+        $role = strtoupper($request->query('role', ''));
+
+        if (!in_array($role, ['SISWA', 'GURU_STAF', 'MITRA'])) {
+            return response()->json(['status' => 'error', 'message' => 'Role tidak valid.'], 422);
+        }
+
+        $voters = Voter::where('role', $role)
+            ->orderBy('name')
+            ->get(['identifier', 'name'])
+            ->map(fn ($v) => ['id' => $v->identifier, 'name' => $v->name])
+            ->values();
+
+        return response()->json(['status' => 'success', 'data' => $voters]);
+    }
+
     private function loginResponse(string $message, array $data): JsonResponse
     {
         return response()->json([

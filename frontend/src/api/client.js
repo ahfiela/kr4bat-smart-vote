@@ -16,7 +16,12 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const hadToken = !!localStorage.getItem('token');
+
+    // Kick ke landing hanya saat sesi token expired/invalid pada request
+    // terautentikasi — BUKAN saat gagal login (401 memang expected).
+    if (error.response?.status === 401 && !isLoginRequest && hadToken) {
       localStorage.clear();
       window.location.href = '/';
     }
