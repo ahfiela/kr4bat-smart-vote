@@ -560,17 +560,29 @@ export default function DashboardVoter() {
                 Suara Anda telah tercatat dan tidak dapat diubah.
               </div>
 
-              <div className="pt-2">
+              <div className="pt-2 space-y-2">
                 <button
                   type="button"
                   onClick={() => {
                     setShowVoteSuccessModal(false);
-                    fetchData();
+                    handleLogout();
                   }}
                   className="w-full bg-[#24c07d] hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-md cursor-pointer"
                 >
-                  Kembali ke sesi pemilihan
+                  Kembali dan Keluar
                 </button>
+
+                <a
+                  href="/"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowVoteSuccessModal(false);
+                    fetchData();
+                  }}
+                  className="block w-full py-1.5 text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                >
+                  Kembali ke sesi pemilihan
+                </a>
               </div>
             </div>
           </div>
