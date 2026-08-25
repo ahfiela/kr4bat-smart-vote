@@ -94,8 +94,8 @@ class AuthController extends Controller
 
         $voters = Voter::where('role', $role)
             ->orderBy('name')
-            ->get(['identifier', 'name'])
-            ->map(fn ($v) => ['id' => $v->identifier, 'name' => $v->name])
+            ->get(['identifier', 'name', 'class'])
+            ->map(fn ($v) => ['id' => $v->identifier, 'name' => $v->name, 'class' => $v->class])
             ->values();
 
         return response()->json(['status' => 'success', 'data' => $voters]);

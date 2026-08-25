@@ -93,7 +93,9 @@ function LandingPage() {
 
   const selectQuickVoter = (voter) => {
     setQuickSelected(voter)
-    setQuickQuery(`${voter.id} — ${voter.name}`)
+    // SISWA: kelas | GURU_STAF/MITRA: posisi/bidang (kolom class)
+    const info = voter.class || ''
+    setQuickQuery(`${voter.id} — ${voter.name}${info ? ` — ${info}` : ''}`)
     setShowDropdown(false)
   }
 
@@ -225,6 +227,7 @@ function LandingPage() {
                       >
                         <span className="font-mono font-bold text-slate-700 text-xs">{v.id}</span>
                         <span className="text-slate-500 text-xs"> — {v.name}</span>
+                        {v.class && <span className="text-blue-600 text-xs"> — {v.class}</span>}
                       </button>
                     ))}
                     {!isFetchingVoters && quickFiltered.length === 0 && (
