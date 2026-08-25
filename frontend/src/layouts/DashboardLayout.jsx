@@ -99,8 +99,8 @@ export default function DashboardLayout() {
           onClick={handleLogout}
           className="w-full flex items-center justify-center space-x-2 bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-xl text-xs font-bold border border-red-100 transition-all duration-200 cursor-pointer"
         >
+          <ion-icon name="log-out-outline" style={{ fontSize: '16px' }}></ion-icon>
           <span>Keluar Sistem</span>
-          <span>🚪</span>
         </button>
       </div>
     </>
@@ -131,8 +131,8 @@ export default function DashboardLayout() {
           onClick={handleLogout}
           className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1 cursor-pointer transition-all"
         >
+          <ion-icon name="log-out-outline" style={{ fontSize: '14px' }}></ion-icon>
           <span>Keluar</span>
-          <span>🚪</span>
         </button>
       </header>
 

@@ -161,13 +161,13 @@ export default function DashboardVoter() {
             <p className="text-xs font-bold text-slate-800 leading-none">{auth?.name}</p>
             <p className="text-[10px] text-blue-600 font-semibold uppercase mt-0.5">{auth?.role}</p>
           </div>
-          {/* Top Right Logout Button (Keluar 🚪) matching screenshot */}
+          {/* Top Right Logout Button (Keluar) matching screenshot */}
           <button
             onClick={handleLogout}
             className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1.5 cursor-pointer transition-all"
           >
+            <ion-icon name="log-out-outline" style={{ fontSize: '14px' }}></ion-icon>
             <span>Keluar</span>
-            <span>🚪</span>
           </button>
         </div>
       </header>
@@ -565,11 +565,11 @@ export default function DashboardVoter() {
                   type="button"
                   onClick={() => {
                     setShowVoteSuccessModal(false);
-                    handleLogout();
+                    fetchData();
                   }}
                   className="w-full bg-[#24c07d] hover:bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-md cursor-pointer"
                 >
-                  Kembali dan Keluar
+                  Kembali ke sesi pemilihan
                 </button>
 
                 <a
@@ -577,11 +577,11 @@ export default function DashboardVoter() {
                   onClick={(e) => {
                     e.preventDefault();
                     setShowVoteSuccessModal(false);
-                    fetchData();
+                    handleLogout();
                   }}
                   className="block w-full py-1.5 text-xs text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
                 >
-                  Kembali ke sesi pemilihan
+                  Kembali dan Keluar
                 </a>
               </div>
             </div>

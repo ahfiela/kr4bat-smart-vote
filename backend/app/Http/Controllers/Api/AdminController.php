@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Candidate;
 use App\Models\SchoolClass;
 use App\Models\Voter;
+use App\Models\VoterHistory;
 use App\Models\VotingSession;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,6 +35,114 @@ class AdminController extends Controller
         $session->load(['category', 'candidates']);
 
         return response()->json(['status' => 'success', 'data' => $session]);
+    }
+
+    public function getSessionParticipation(VotingSession $session): JsonResponse
+    {
+        // Eligible = role sesuai allowed_roles (+ allowed_classes bila diisi),
+        // ATAU dimasukkan eksplisit lewat pencarian manual (allowed_voters)
+        $allowedRoles = !empty($session->allowed_roles)
+            ? $session->allowed_roles
+            : ['SISWA', 'GURU_STAF', 'MITRA'];
+        $allowedClasses = $session->allowed_classes ?? [];
+        $allowedVoters = $session->allowed_voters ?? [];
+
+        $eligible = Voter::query()
+            ->where(function ($q) use ($allowedRoles, $allowedClasses, $allowedVoters) {
+                $q->where(function ($q2) use ($allowedRoles, $allowedClasses) {
+                    $q2->whereIn('role', $allowedRoles);
+                    if (!empty($allowedClasses)) {
+                        $q2->whereIn('class', $allowedClasses);
+                    }
+                });
+                if (!empty($allowedVoters)) {
+                    $q->orWhereIn('identifier', $allowedVoters);
+                }
+            })
+            ->orderBy('name')
+            ->get(['id', 'identifier', 'name', 'role', 'class']);
+
+        $votedIds = VoterHistory::where('voting_session_id', $session->id)
+            ->pluck('voter_id')
+            ->all();
+
+        $mapVoters = fn ($items) => collect($items)
+            ->map(fn ($v) => [
+                'identifier' => $v->identifier,
+                'name'       => $v->name,
+                'class'      => $v->class,
+                'role'       => $v->role,
+                'voted'      => in_array($v->id, $votedIds),
+            ])
+            ->values()
+            ->all();
+
+        $groups = [];
+        $totalVoted = 0;
+
+        // SISWA: dikelompokkan per kelas
+        $siswa = $eligible->where('role', 'SISWA')->values();
+        if ($siswa->isNotEmpty() || in_array('SISWA', $allowedRoles)) {
+            $classNames = $siswa->groupBy(fn ($v) => $v->class ?: '(Tanpa Kelas)')->keys()->all();
+            usort($classNames, function ($a, $b) {
+                $ga = static::detectGradeRank($a);
+                $gb = static::detectGradeRank($b);
+                if ($ga !== $gb) return $ga <=> $gb;
+                return strnatcasecmp($a, $b);
+            });
+
+            foreach ($classNames as $className) {
+                $items = $siswa->filter(fn ($v) => ($v->class ?: '(Tanpa Kelas)') === $className)->all();
+                $votedCount = count(array_filter($items, fn ($v) => in_array($v->id, $votedIds)));
+                $totalVoted += $votedCount;
+
+                $groups[] = [
+                    'key'    => 'class:' . $className,
+                    'label'  => $className,
+                    'type'   => 'CLASS',
+                    'total'  => count($items),
+                    'voted'  => $votedCount,
+                    'voters' => $mapVoters($items),
+                ];
+            }
+        }
+
+        // GURU_STAF & MITRA: satu grup per role
+        foreach (['GURU_STAF' => 'Guru & Staf', 'MITRA' => 'Mitra'] as $role => $label) {
+            $items = $eligible->where('role', $role)->values();
+            if ($items->isEmpty() && !in_array($role, $allowedRoles)) continue;
+
+            $arr = $items->all();
+            $votedCount = count(array_filter($arr, fn ($v) => in_array($v->id, $votedIds)));
+            $totalVoted += $votedCount;
+
+            $groups[] = [
+                'key'    => 'role:' . $role,
+                'label'  => $label,
+                'type'   => 'ROLE',
+                'total'  => count($arr),
+                'voted'  => $votedCount,
+                'voters' => $mapVoters($arr),
+            ];
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => [
+                'total_eligible' => $eligible->count(),
+                'total_voted'    => $totalVoted,
+                'not_voted'      => $eligible->count() - $totalVoted,
+                'groups'         => $groups,
+            ],
+        ]);
+    }
+
+    private static function detectGradeRank(string $label): int
+    {
+        $n = strtoupper(trim($label));
+        if (preg_match('/^(10|11|12)\b/', $n, $m)) return (int) $m[1];
+        if (preg_match('/^(XII|XI|X)\b/', $n)) return ['X' => 10, 'XI' => 11, 'XII' => 12][explode(' ', $n)[0]];
+        return 99;
     }
 
     public function storeSession(Request $request): JsonResponse

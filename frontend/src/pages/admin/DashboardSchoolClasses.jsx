@@ -1,11 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
 
+// Deteksi tingkat kelas: dukung angka (10/11/12) & Romawi (X/XI/XII)
+const GRADE_PATTERNS = [
+  { re: /^(10|11|12)\b/, parse: (m) => parseInt(m[1], 10) },
+  { re: /^(XII|XI|X)\b/, parse: (m) => ({ X: 10, XI: 11, XII: 12 })[m[1]] },
+  { re: /\b(10|11|12)\b/, parse: (m) => parseInt(m[1], 10) },
+  { re: /\b(XII|XI|X)\b/, parse: (m) => ({ X: 10, XI: 11, XII: 12 })[m[1]] },
+];
+
+const detectGrade = (name) => {
+  const n = String(name).trim().toUpperCase();
+  for (const p of GRADE_PATTERNS) {
+    const m = n.match(p.re);
+    if (m) return p.parse(m);
+  }
+  return null;
+};
+
+const gradeRank = (g) => (g === null ? 99 : g);
+
+// Daftar jurusan untuk filter (dicocokkan sebagai kata utuh dalam nama kelas)
+const MAJORS = ['PPLG', 'TJKT', 'TPFL', 'TO'];
+
+const detectMajor = (name) => {
+  const n = String(name).trim().toUpperCase();
+  return MAJORS.find((mj) => new RegExp(`\\b${mj}\\b`).test(n)) || null;
+};
+
 export default function DashboardSchoolClasses() {
   const [classes, setClasses] = useState([]);
   const [name, setName] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
+  const [gradeFilter, setGradeFilter] = useState('');
+  const [majorFilter, setMajorFilter] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -29,6 +58,19 @@ export default function DashboardSchoolClasses() {
   useEffect(() => {
     fetchClasses();
   }, []);
+
+  // Urutkan: tingkat 10/X → 11/XI → 12/XII → tak terdeteksi, lalu nama (natural)
+  const sortedClasses = [...classes].sort((a, b) => {
+    const diff = gradeRank(detectGrade(a.name)) - gradeRank(detectGrade(b.name));
+    if (diff !== 0) return diff;
+    return a.name.localeCompare(b.name, 'id', { numeric: true });
+  });
+
+  const visibleClasses = sortedClasses.filter((c) => {
+    if (gradeFilter && String(detectGrade(c.name)) !== gradeFilter) return false;
+    if (majorFilter && detectMajor(c.name) !== majorFilter) return false;
+    return true;
+  });
 
   const resetMessages = () => {
     setErrorMessage('');
@@ -162,13 +204,35 @@ export default function DashboardSchoolClasses() {
 
         {/* Daftar Kelas */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <h3 className="text-base font-extrabold text-slate-900">Daftar Kelas Terdaftar</h3>
-            {classes.length > 0 && (
-              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
-                Total: {classes.length} Kelas
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              <select
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium px-3 py-2 focus:outline-none shadow-xs cursor-pointer"
+              >
+                <option value="">Semua Tingkat</option>
+                <option value="10">Kelas 10 / X</option>
+                <option value="11">Kelas 11 / XI</option>
+                <option value="12">Kelas 12 / XII</option>
+              </select>
+              <select
+                value={majorFilter}
+                onChange={(e) => setMajorFilter(e.target.value)}
+                className="bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium px-3 py-2 focus:outline-none shadow-xs cursor-pointer"
+              >
+                <option value="">Semua Jurusan</option>
+                {MAJORS.map((mj) => (
+                  <option key={mj} value={mj}>{mj}</option>
+                ))}
+              </select>
+              {classes.length > 0 && (
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
+                  Total: {visibleClasses.length} Kelas
+                </span>
+              )}
+            </div>
           </div>
 
           {isFetching && <p className="text-sm text-slate-400 font-medium">Memuat data kelas...</p>}
@@ -178,9 +242,14 @@ export default function DashboardSchoolClasses() {
               <p className="text-sm text-slate-500 font-medium">Belum ada data kelas yang ditambahkan di master data.</p>
             </div>
           )}
+          {!isFetching && classes.length > 0 && visibleClasses.length === 0 && (
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 text-center shadow-xs">
+              <p className="text-sm text-slate-500 font-medium">Tidak ada kelas yang cocok dengan filter.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {classes.map((cls) => (
+            {visibleClasses.map((cls) => (
               <div
                 key={cls.id}
                 className="bg-white border border-slate-200 hover:border-blue-500/50 rounded-2xl p-4 flex items-center justify-between transition-all duration-200 shadow-xs hover:shadow-sm group"

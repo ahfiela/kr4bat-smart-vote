@@ -18,6 +18,10 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  // Golput Monitoring
+  const [participation, setParticipation] = useState(null);
+  const [detailGroup, setDetailGroup] = useState(null);
+
   // Messages
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -31,6 +35,15 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
       }
     } catch (err) {
       console.error('Gagal mengambil data monitor room:', err);
+    }
+
+    try {
+      const res = await apiClient.get(`/admin/sessions/${session.id}/participation`);
+      if (res.data.status === 'success') {
+        setParticipation(res.data.data);
+      }
+    } catch (err) {
+      console.error('Gagal mengambil data partisipasi:', err);
     }
   };
 
@@ -401,6 +414,68 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
               </div>
             )}
           </div>
+
+          {/* Golput Monitoring */}
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 space-y-4 shadow-xs">
+            <div>
+              <h3 className="text-xs font-black text-blue-600 uppercase tracking-wider">
+                Golput Monitoring (Belum Memilih)
+              </h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed font-medium">
+                Klik kelas / peran untuk melihat daftar nama yang sudah &amp; belum memberikan suara.
+              </p>
+            </div>
+
+            {participation && participation.groups.length > 0 && (
+              <p className="text-xs font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2">
+                Ringkasan: <b>{participation.total_voted}</b>/{participation.total_eligible} sudah vote •{' '}
+                <b className={participation.not_voted > 0 ? 'text-red-600' : 'text-emerald-600'}>
+                  {participation.not_voted} golput
+                </b>
+              </p>
+            )}
+
+            <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+              {(participation?.groups || []).map((g) => {
+                const pct = g.total > 0 ? Math.round((g.voted / g.total) * 100) : 0;
+                const notVoted = g.total - g.voted;
+
+                return (
+                  <button
+                    key={g.key}
+                    type="button"
+                    onClick={() => setDetailGroup(g)}
+                    className="w-full bg-slate-50 hover:bg-blue-50/60 border border-slate-200 hover:border-blue-300 rounded-xl p-3 text-left transition-all cursor-pointer space-y-2"
+                  >
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-slate-800 truncate">
+                          {g.type === 'CLASS' ? `Kelas: ${g.label}` : g.label}
+                        </p>
+                        <p className="text-[10px] text-slate-500">
+                          {g.voted}/{g.total} sudah vote •{' '}
+                          <span className={notVoted > 0 ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
+                            {notVoted} belum
+                          </span>
+                        </p>
+                      </div>
+                      <ion-icon name="chevron-forward" style={{ fontSize: '14px' }}></ion-icon>
+                    </div>
+                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full ${pct === 100 ? 'bg-emerald-500' : 'bg-blue-600'}`}
+                        style={{ width: `${pct}%` }}
+                      ></div>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {(!participation || participation.groups.length === 0) && (
+                <p className="text-xs text-slate-400 italic">Belum ada data pemilih untuk sesi ini.</p>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Right Column: Dynamic Realtime Voting Monitor & Charts */}
@@ -409,7 +484,12 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
             <div className="flex justify-between items-center border-b border-slate-100 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900">Perolehan Suara Real-time Bilik</h3>
-                <p className="text-xs text-slate-500 font-medium">Total suara terhitung: <span className="font-extrabold text-blue-600 text-sm">{totalVotes}</span> suara</p>
+                <p className="text-xs text-slate-500 font-medium">
+                  Total suara terhitung: <span className="font-extrabold text-blue-600 text-sm">{totalVotes}</span> suara
+                  {participation && (
+                    <> / <span className={`font-extrabold text-sm ${participation.not_voted > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{participation.not_voted}</span> belum vote</>
+                  )}
+                </p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -477,6 +557,66 @@ export default function RoomMonitorPanel({ session, onBack, onUpdateSession }) {
           </div>
         </div>
       </div>
+
+      {/* Popup Detail Golput per Kelas/Role */}
+      {detailGroup && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+          onClick={() => setDetailGroup(null)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl max-h-[85vh] flex flex-col space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-start gap-3">
+              <div className="min-w-0">
+                <h3 className="text-base font-extrabold text-slate-900 truncate">
+                  {detailGroup.type === 'CLASS' ? `Kelas: ${detailGroup.label}` : detailGroup.label}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  {detailGroup.voted}/{detailGroup.total} sudah vote •{' '}
+                  <span className={detailGroup.total - detailGroup.voted > 0 ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>
+                    {detailGroup.total - detailGroup.voted} belum vote
+                  </span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDetailGroup(null)}
+                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs transition-all cursor-pointer shrink-0"
+                title="Tutup"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="overflow-y-auto divide-y divide-slate-100 -mx-2 px-2">
+              {detailGroup.voters.map((v) => (
+                <div key={v.identifier} className="py-2.5 flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-slate-800 truncate">{v.name}</p>
+                    <p className="text-[10px] text-slate-500 font-mono">
+                      {v.identifier}{v.class ? ` • ${v.class}` : ''}
+                    </p>
+                  </div>
+                  {v.voted ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0">
+                      ✓ Sudah Vote
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md shrink-0">
+                      Belum Vote
+                    </span>
+                  )}
+                </div>
+              ))}
+              {detailGroup.voters.length === 0 && (
+                <p className="py-4 text-xs text-slate-400 italic text-center">Tidak ada pemilih pada grup ini.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

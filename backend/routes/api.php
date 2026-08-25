@@ -18,6 +18,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/sessions', [AdminController::class, 'index']);
             Route::post('/sessions', [AdminController::class, 'storeSession']);
             Route::get('/sessions/{session}', [AdminController::class, 'show']);
+            Route::get('/sessions/{session}/participation', [AdminController::class, 'getSessionParticipation']);
             Route::put('/sessions/{session}', [AdminController::class, 'updateSession']);
             Route::delete('/sessions/{session}', [AdminController::class, 'destroySession']);
             Route::patch('/sessions/{session}/status', [AdminController::class, 'updateStatus']);
