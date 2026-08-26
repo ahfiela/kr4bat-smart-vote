@@ -191,7 +191,7 @@ function LandingPage() {
 
             <form onSubmit={handleQuickLoginSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 tracking-wide mb-1.5">ROLE</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">ROLE</label>
                 <select
                   value={quickRole}
                   onChange={(e) => setQuickRole(e.target.value)}
@@ -204,7 +204,7 @@ function LandingPage() {
               </div>
 
               <div className="relative">
-                <label className="block text-xs font-bold text-slate-600 tracking-wide mb-1.5">NISN / NIP / ID PENGGUNA</label>
+                <label className="block text-xs font-bold text-slate-900 mb-1.5">NISN / NIP / ID PENGGUNA</label>
                 {quickFilterClass && quickFilterClass.length > 0 && (
                   <p className="mb-1.5 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-2.5 py-1">
                     <ion-icon name="funnel" style={{ fontSize: '10px', verticalAlign: '-1px' }}></ion-icon>{' '}
@@ -224,7 +224,7 @@ function LandingPage() {
                   }}
                   onFocus={() => setShowDropdown(true)}
                   onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
-                  className={`w-full rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 border font-medium focus:outline-hidden ${
+                  className={`w-full rounded-xl px-4 py-3 text-sm text-slate-800  border font-medium focus:outline-hidden ${
                     errorMessage
                       ? 'border-red-500 bg-red-50/30 focus:border-red-500'
                       : 'border-slate-200/80 bg-slate-50 focus:border-blue-500 focus:bg-white'
